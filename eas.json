@@ -1,0 +1,55 @@
+{
+  "cli": {
+    "version": ">= 13.2.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fqjmdvvbikawuacolpyu.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxam1kdnZiaWthd3VhY29scHl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTA5NjksImV4cCI6MjA3NTIyNjk2OX0.6U_JNK6T2P1K6OQ02g0hApcWdymfVUr4tgL7QSGGAiw",
+        "EXPO_PUBLIC_ADMIN_EMAIL": "admin@beehauz.com",
+        "EXPO_PUBLIC_ADMIN_PASSWORD": "BetaAnalytics2025!",
+        "EXPO_PUBLIC_ADMIN_USERNAME": "beehauz_admin",
+        "EXPO_PUBLIC_ADMIN_ACCESS_CODE": "BETA_DASH_2025"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://fqjmdvvbikawuacolpyu.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZxam1kdnZiaWthd3VhY29scHl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NTA5NjksImV4cCI6MjA3NTIyNjk2OX0.6U_JNK6T2P1K6OQ02g0hApcWdymfVUr4tgL7QSGGAiw",
+        "EXPO_PUBLIC_ADMIN_EMAIL": "admin@beehauz.com",
+        "EXPO_PUBLIC_ADMIN_PASSWORD": "BetaAnalytics2025!",
+        "EXPO_PUBLIC_ADMIN_USERNAME": "beehauz_admin",
+        "EXPO_PUBLIC_ADMIN_ACCESS_CODE": "BETA_DASH_2025"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

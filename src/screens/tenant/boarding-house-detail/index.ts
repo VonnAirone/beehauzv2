@@ -1,0 +1,1 @@
+export { BoardingHouseDetailScreen } from './BoardingHouseDetailScreen';
