@@ -9,3 +9,7 @@ export { PhoneInput } from './PhoneInput';
 export { AppRatingModal } from './AppRatingModal';
 export { AppRatingWrapper } from './AppRatingWrapper';
 export { HiddenAdminAccess } from './HiddenAdminAccess';
+export { ErrorBoundary } from './ErrorBoundary';
+export { ResponsiveContainer } from './ResponsiveContainer';
+export { ResponsiveGrid } from './ResponsiveGrid';
+export { DesktopSidebar } from './DesktopSidebar';

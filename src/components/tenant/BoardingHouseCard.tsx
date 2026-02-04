@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
 import { Star, MapPin, Bed, Zap, Droplets, Users } from 'lucide-react-native';
 import { BoardingHouse } from '../../types/tenant';
 import { Card } from '../common/Card';
 import { typography } from '../../styles/typography';
 import { colors } from '../../styles/colors';
+import { useResponsive } from '../../hooks/useResponsive';
 
 interface BoardingHouseCardProps {
   boardingHouse: BoardingHouse;
@@ -15,6 +16,8 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   boardingHouse,
   onPress,
 }) => {
+  const { isDesktop, isTablet } = useResponsive();
+  
   const {
     name,
     location,
@@ -33,9 +36,9 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   };
 
   const renderRating = () => (
-    <View style={styles.ratingContainer}>
+    <View>
       <Star size={16} color={colors.warning} fill={colors.warning} />
-      <Text style={[typography.textStyles.bodySmall, styles.ratingText]}>
+      <Text style={[typography.textStyles.bodySmall]}>
         {rating.toFixed(1)} ({reviewCount})
       </Text>
     </View>
@@ -68,11 +71,34 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   );
 
   return (
-    <TouchableOpacity onPress={() => onPress?.(boardingHouse)} activeOpacity={0.7}>
-      <Card style={styles.card}>
+    <TouchableOpacity 
+      onPress={() => onPress?.(boardingHouse)} 
+      activeOpacity={0.7}
+      style={[
+        styles.cardWrapper,
+        (isDesktop || isTablet) && styles.cardWrapperDesktop,
+      ]}
+    >
+      <Card style={[
+        styles.card,
+        Platform.OS === 'web' && styles.cardWeb,
+      ]}>
         {/* Image Section */}
         {images.length > 0 && (
-          <Image source={{ uri: images[0] }} style={styles.image} resizeMode="cover" />
+          <View style={styles.imageWrapper}>
+            <Image 
+              source={{ uri: images[0] }} 
+              style={[
+                styles.image,
+                (isDesktop || isTablet) && styles.imageDesktop,
+              ]} 
+              resizeMode="cover" 
+            />
+            <View style={styles.ratingBadge}>
+              <Star size={14} color={colors.warning} fill={colors.warning} />
+              <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
+            </View>
+          </View>
         )}
         
         <View style={styles.content}>
@@ -81,56 +107,34 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
             <Text style={[typography.textStyles.h4, styles.name]} numberOfLines={1}>
               {name}
             </Text>
-            {renderRating()}
+            <Text style={[typography.textStyles.caption, styles.reviewCount]}>
+              {reviewCount} reviews
+            </Text>
           </View>
 
           {/* Location */}
           <View style={styles.locationContainer}>
             <MapPin size={14} color={colors.gray[500]} />
-            <Text style={[typography.textStyles.bodySmall, styles.location]} numberOfLines={1}>
+            <Text style={[typography.textStyles.caption, styles.location]} numberOfLines={1}>
               {location}
             </Text>
           </View>
 
-          {/* Room Types */}
-          <View style={styles.roomTypesContainer}>
-            {boardingHouse.roomTypes && boardingHouse.roomTypes.length > 0 ? (
-              boardingHouse.roomTypes.map((roomType, index) => (
-                <View key={index} style={styles.roomTypeChip}>
-                  <Users size={12} color={colors.primary} />
-                  <Text style={[typography.textStyles.caption, styles.roomTypeText]}>
-                    {roomType.type}
-                  </Text>
-                  <Text style={[typography.textStyles.caption, styles.roomTypePrice]}>
-                    ₱{roomType.pricePerMonth.toLocaleString()}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <View style={styles.roomTypeChip}>
-                <Users size={12} color={colors.primary} />
-                <Text style={[typography.textStyles.caption, styles.roomTypeText]}>
-                  6-person
-                </Text>
-                <Text style={[typography.textStyles.caption, styles.roomTypePrice]}>
-                  ₱{ratePerMonth.toLocaleString()}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Available Beds and Price */}
           <View style={styles.bedsAndPrice}>
-            <View style={styles.bedsContainer}>
-              <Bed size={16} color={colors.primary} />
-              <Text style={[typography.textStyles.bodySmall, styles.bedsText]}>
-                {availableBeds} beds available
-              </Text>
-            </View>
             <Text style={[typography.textStyles.h4, styles.price]}>
               {formatPrice(ratePerMonth)}/month
             </Text>
+
+            <View style={styles.bedsContainer}>
+              <Bed size={16} color={colors.primary} />
+              <Text style={[typography.textStyles.caption, styles.bedsText]}>
+                {availableBeds} beds available
+              </Text>
+            </View>
           </View>
+
+
+         
 
           
         </View>
@@ -140,6 +144,13 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
 };
 
 const styles = StyleSheet.create({
+  cardWrapper: {
+    width: '95%',
+    marginBottom: 16,
+  },
+  cardWrapperDesktop: {
+    marginBottom: 0,
+  },
   card: {
     overflow: 'hidden',
     width: '100%',
@@ -148,18 +159,45 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    borderRadius: 16,
+  },
+  cardWeb: {
+    cursor: 'pointer' as any,
+  },
+  imageWrapper: {
+    position: 'relative',
   },
   image: {
     width: '100%',
-    height: 160,
+    height: 170,
+  },
+  imageDesktop: {
+    height: 220,
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  ratingBadgeText: {
+    color: colors.white,
+    fontSize: 12,
+    fontFamily: 'Figtree_600SemiBold',
   },
   content: {
-    paddingVertical: 16
+    paddingVertical: 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 8,
   },
   name: {
@@ -167,13 +205,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
     color: colors.gray[900],
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    marginLeft: 4,
-    color: colors.gray[600],
+  reviewCount: {
+    color: colors.gray[500],
   },
   locationContainer: {
     flexDirection: 'row',
@@ -189,6 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 8
   },
   bedsContainer: {
     flexDirection: 'row',

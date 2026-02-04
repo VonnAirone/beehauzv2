@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    
+    <!-- Responsive viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Beehauz" />
+    
+    <!-- App Info -->
+    <meta name="application-name" content="Beehauz" />
+    <meta name="description" content="Find your perfect student boarding house near Philippine universities. Search, compare, and connect with verified property owners." />
+    <meta name="theme-color" content="#FF8B00" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Beehauz - Student Boarding Houses" />
+    <meta property="og:description" content="Find your perfect student boarding house near Philippine universities." />
+    <meta property="og:type" content="website" />
+    
+    <title>Beehauz - Student Boarding Houses</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    
+    <!-- Fonts -->
+    <style>
+      #root, body, html {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+      
+      /* Loading screen */
+      #loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #ffffff;
+      }
+      
+      #loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #FF8B00;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      #loading-text {
+        margin-top: 20px;
+        color: #FF8B00;
+        font-size: 18px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loading">
+      <div id="loading-spinner"></div>
+      <div id="loading-text">Loading Beehauz...</div>
+    </div>
+    
+    <!-- App Root -->
+    <div id="root"></div>
+    
+    <script>
+      // Remove loading screen when app loads
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loading = document.getElementById('loading');
+          if (loading) {
+            loading.style.display = 'none';
+          }
+        }, 500);
+      });
+    </script>
+  </body>
+</html>

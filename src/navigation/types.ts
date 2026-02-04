@@ -1,3 +1,4 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
 import { BoardingHouse } from '../types/tenant';
 import { BlogPost } from '../data/sampleBlogPosts';
 
@@ -38,7 +39,7 @@ export type TenantTabParamList = {
 };
 
 export type TenantStackParamList = {
-  TenantTabs: undefined;
+  TenantTabs: NavigatorScreenParams<TenantTabParamList> | undefined;
   Filter: undefined;
   MapView: undefined;
   BoardingHousesList: undefined;

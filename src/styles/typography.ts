@@ -2,10 +2,10 @@
 export const typography = {
   // Font families
   fontFamily: {
-    regular: 'Figtree_400Regular',
-    medium: 'Figtree_500Medium',
-    semiBold: 'Figtree_600SemiBold',
-    bold: 'Figtree_700Bold',
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semiBold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
   },
   
   // Font sizes
@@ -40,43 +40,43 @@ export const typography = {
   textStyles: {
     h1: {
       fontSize: 30,
-      fontFamily: 'Figtree_700Bold',
+      fontFamily: 'Inter_700Bold',
     },
     h2: {
       fontSize: 24,
-      fontFamily: 'Figtree_600SemiBold',
+      fontFamily: 'Inter_600SemiBold',
     },
     h3: {
       fontSize: 20,
-      fontFamily: 'Figtree_600SemiBold',
+      fontFamily: 'Inter_600SemiBold',
     },
     h4: {
       fontSize: 18,
-      fontFamily: 'Figtree_500Medium',
+      fontFamily: 'Inter_500Medium',
     },
     h5: {
       fontSize: 16,
-      fontFamily: 'Figtree_500Medium',
+      fontFamily: 'Inter_500Medium',
     },  
     h6: {
       fontSize: 14,
-      fontFamily: 'Figtree_500Medium',
+      fontFamily: 'Inter_500Medium',
     },  
     body: {
       fontSize: 16,
-      fontFamily: 'Figtree_400Regular',
+      fontFamily: 'Inter_400Regular',
     },
     bodySmall: {
       fontSize: 14,
-      fontFamily: 'Figtree_400Regular',
+      fontFamily: 'Inter_400Regular',
     },
     caption: {
       fontSize: 12,
-      fontFamily: 'Figtree_400Regular',
+      fontFamily: 'Inter_400Regular',
     },
     button: {
       fontSize: 16,
-      fontFamily: 'Figtree_600SemiBold',
+      fontFamily: 'Inter_600SemiBold',
     },
   },
 } as const;
