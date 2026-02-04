@@ -1,10 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Admin credentials - should match your login credentials
+// Admin credentials - Load from environment variables (.env file)
 const ADMIN_CREDENTIALS = {
-  email: process.env.EXPO_PUBLIC_ADMIN_EMAIL || 'admin@beehauz.com',
-  password: process.env.EXPO_PUBLIC_ADMIN_PASSWORD || 'BetaAnalytics2025!',
+  email: process.env.EXPO_PUBLIC_ADMIN_EMAIL,
+  password: process.env.EXPO_PUBLIC_ADMIN_PASSWORD,
 };
+
+if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
+  throw new Error('Missing required environment variables: EXPO_PUBLIC_ADMIN_EMAIL and EXPO_PUBLIC_ADMIN_PASSWORD. Please check your .env file.');
+}
 
 const ADMIN_SESSION_KEY = '@admin_access_granted';
 
@@ -64,5 +68,4 @@ export class AdminAccessManager {
 export const getAdminCredentials = () => ({
   email: ADMIN_CREDENTIALS.email,
   // Don't expose password in production logs
-  passwordHint: 'BeehauxAdmin2025!',
 });
