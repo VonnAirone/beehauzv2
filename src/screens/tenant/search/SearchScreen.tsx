@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, TextInput, ScrollView, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Image, Platform, ImageStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
-import { Heart, Home, Shirt, ShoppingBag, Filter, Search, X, BookOpen } from 'lucide-react-native';
+import { Heart, Filter, Search, X, BookOpen, MapPin } from 'lucide-react-native';
 import { TenantStackParamList, TenantTabParamList } from '../../../navigation/types';
-import { BoardingHouseCard } from '../../../components/tenant';
+import { BoardingHouseCard, ServiceSurveyModal } from '../../../components/tenant';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 import { sampleBoardingHouses } from '../../../data/sampleBoardingHouses';
@@ -18,7 +18,7 @@ import { useUserType } from '../../../context/UserTypeContext';
 import { GuestViewProgressBanner, AuthPromptModal } from '../../../components/common';
 import { FeatureType, BETA_TESTING_MODE } from '../../../utils/guestAccess';
 import { POPULAR_SCHOOLS } from '../../../utils/constants';
-import { surveyService, SurveySubmissionData } from '../../../services/surveyService';
+import { useServiceSurvey } from '../../../hooks/tenant/useServiceSurvey';
 import { useAppRating } from '../../../context/AppRatingContext';
 
 type SearchScreenNavigationProp = CompositeNavigationProp<
@@ -26,31 +26,29 @@ type SearchScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<TenantStackParamList>
 >;
 
-type ServiceTab = 'properties' | 'laundry' | 'delivery';
-
 export const SearchScreen: React.FC = () => {
+  const isWeb = Platform.OS === 'web';
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const { hasUnviewedFavorites } = useFavorites();
   const { isAuthenticated } = useAuth();
   const { hasReachedViewLimit } = useGuestTracking();
   const { clearUserType } = useUserType();
   const { incrementTrigger } = useAppRating();
-  const [activeTab, setActiveTab] = useState<ServiceTab>('properties');
   const [showFilters, setShowFilters] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [priceRange, setPriceRange] = useState<{min: number, max: number}>({min: 0, max: 10000});
   const [selectedSchool, setSelectedSchool] = useState<string>('');
-  const [showSurveyModal, setShowSurveyModal] = useState(false);
-  const [surveyType, setSurveyType] = useState<'laundry' | 'delivery'>('laundry');
   const [authPromptVisible, setAuthPromptVisible] = useState(false);
   const [currentFeature, setCurrentFeature] = useState<FeatureType>('view_all_properties');
-  const [anonymousEmail, setAnonymousEmail] = useState('');
+  const {
+    showSurveyModal,
+    surveyType,
+    anonymousEmail,
+    setAnonymousEmail,
+    closeSurvey,
+    submitSurveyResponse,
+  } = useServiceSurvey(isAuthenticated);
 
-  const tabs = [
-    { id: 'properties', label: 'Properties', icon: Home },
-    { id: 'laundry', label: 'Palaba', icon: Shirt },
-    { id: 'delivery', label: 'Pabakal', icon: ShoppingBag },
-  ];
 
   const handleAuthPromptSignUp = () => {
     setAuthPromptVisible(false);
@@ -86,30 +84,6 @@ export const SearchScreen: React.FC = () => {
     }
   };
 
-  const renderTabBar = () => (
-    <View style={styles.tabBar}>
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab.id;
-        const IconComponent = tab.icon;
-        
-        return (
-          <TouchableOpacity
-            key={tab.id}
-            style={[styles.tab, isActive && styles.activeTab]}
-            onPress={() => setActiveTab(tab.id as ServiceTab)}
-          >
-            <IconComponent size={20} color={isActive ? colors.white : colors.gray[500]} />
-            <Text style={[
-              styles.tabText,
-              isActive ? styles.activeTabText : styles.inactiveTabText
-            ]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
 
   const filterProperties = (properties: typeof sampleBoardingHouses) => {
     return properties.filter(property => {
@@ -157,8 +131,9 @@ export const SearchScreen: React.FC = () => {
       <View>
         <View style={styles.sectionHeaderWithFilter}>
           <Text style={[typography.textStyles.h3, styles.sectionTitle]}>
-            {isFilterActive() ? `Results (${allFilteredProperties.length})` : 'Recommended Properties'}
+            {isFilterActive() ? `Results (${allFilteredProperties.length})` : 'List of Boarding Houses'}
           </Text>
+          <View style={styles.sectionTitleDivider} />
           {isFilterActive() && (
             <TouchableOpacity onPress={clearAllFilters}>
               <Text style={styles.clearFilterText}>Clear Filter</Text>
@@ -176,6 +151,17 @@ export const SearchScreen: React.FC = () => {
               Try adjusting your search terms or price range to see more results.
             </Text>
           </View>
+        ) : isWeb ? (
+          <View style={styles.webGrid}>
+            {displayedProperties.map((item) => (
+              <View key={item.id} style={styles.webCardWrapper}>
+                <BoardingHouseCard
+                  boardingHouse={item}
+                  onPress={() => handlePropertyPress(item)}
+                />
+              </View>
+            ))}
+          </View>
         ) : (
           <FlatList
             data={displayedProperties}
@@ -190,11 +176,14 @@ export const SearchScreen: React.FC = () => {
             )}
             horizontal
             pagingEnabled
-            snapToInterval={310} // Card width (280) + margins (30)
+            snapToInterval={310}
             decelerationRate="fast"
             snapToAlignment="center"
             contentContainerStyle={styles.horizontalListContainer}
             showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
+            style={styles.horizontalList}
           />
         )}
       </View>
@@ -217,7 +206,7 @@ export const SearchScreen: React.FC = () => {
             activeOpacity={0.7}
             onPress={() => navigation.navigate('BlogDetail', { blog: item })}
           >
-            <Image source={{ uri: item.image }} style={styles.blogImage} />
+            <Image source={{ uri: item.image }} style={styles.blogImage as ImageStyle} />
             <View style={styles.blogContent}>
               <Text style={styles.blogTitle} numberOfLines={2}>{item.title}</Text>
               <Text style={styles.blogExcerpt} numberOfLines={3}>{item.excerpt}</Text>
@@ -245,52 +234,6 @@ export const SearchScreen: React.FC = () => {
     </View>
   );
 
-  const renderLaundry = () => (
-    <View style={styles.comingSoonContainer}>
-      <Shirt size={64} color={colors.gray[400]} />
-      <Text style={styles.comingSoonTitle}>Palaba Services</Text>
-      <Text style={styles.comingSoonText}>
-        Laundry and dry cleaning services coming soon! 
-        We're partnering with local laundry shops to bring you convenient pickup and delivery.
-      </Text>
-      <TouchableOpacity 
-        style={styles.surveyButton}
-        onPress={() => openSurvey('laundry')}
-      >
-        <Text style={styles.surveyButtonText}>I'm Interested - Take Survey</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderDelivery = () => (
-    <View style={styles.comingSoonContainer}>
-      <ShoppingBag size={64} color={colors.gray[400]} />
-      <Text style={styles.comingSoonTitle}>Pabakal Services</Text>
-      <Text style={styles.comingSoonText}>
-        Food and grocery delivery services coming soon! 
-        Order from local restaurants and stores with convenient delivery to your boarding house.
-      </Text>
-      <TouchableOpacity 
-        style={styles.surveyButton}
-        onPress={() => openSurvey('delivery')}
-      >
-        <Text style={styles.surveyButtonText}>I'm Interested - Take Survey</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'properties':
-        return renderProperties();
-      case 'laundry':
-        return renderLaundry();
-      case 'delivery':
-        return renderDelivery();
-      default:
-        return renderProperties();
-    }
-  };
 
   const priceRanges = [
     { label: 'Under ₱2,000', min: 0, max: 2000 },
@@ -300,110 +243,6 @@ export const SearchScreen: React.FC = () => {
     { label: 'Above ₱5,000', min: 5000, max: 10000 },
   ];
 
-  const handleSurveyResponse = async (response: 'not-interested' | 'maybe' | 'very-interested') => {
-    // For anonymous users, validate email before submitting
-    if (!isAuthenticated && !anonymousEmail.trim()) {
-      Alert.alert(
-        'Email Required',
-        'Please provide your email address to submit the survey.',
-        [{ text: 'OK', style: 'default' }]
-      );
-      return;
-    }
-
-    // Store email before clearing it
-    const emailForSubmission = !isAuthenticated ? anonymousEmail.trim() : undefined;
-    
-    setShowSurveyModal(false);
-    setAnonymousEmail(''); // Clear email after storing it
-    
-    const serviceType = surveyType === 'laundry' ? 'laundry services' : 'food and grocery delivery services';
-    
-    // For anonymous users, check for duplicates before submitting
-    if (!isAuthenticated && emailForSubmission) {
-      try {
-        const duplicateCheck = await surveyService.hasUserRespondedToService(surveyType, emailForSubmission);
-        if (duplicateCheck.success && duplicateCheck.hasResponded) {
-          const serviceTypeDisplay = surveyType === 'laundry' ? 'laundry services' : 'delivery services';
-          Alert.alert(
-            'Already Submitted',
-            `Thank you! We've already received your feedback about ${serviceTypeDisplay} from this email address.`,
-            [{ text: 'OK', style: 'default' }]
-          );
-          return;
-        }
-      } catch (error) {
-        if (__DEV__) console.warn('Error checking duplicate survey:', error);
-        // Continue with submission even if duplicate check fails
-      }
-    }
-
-    // Save survey response to database
-    try {
-      const surveyData: SurveySubmissionData = {
-        service_type: surveyType,
-        response_level: response,
-        user_email: emailForSubmission, // Use stored email
-      };
-      
-      const result = await surveyService.submitSurveyResponse(surveyData);
-      
-      if (result.success) {
-        // Survey response saved successfully
-      } else {
-        if (__DEV__) console.warn('Failed to save survey response:', result.error);
-        // Still show user feedback even if save fails
-      }
-    } catch (error) {
-      if (__DEV__) console.error('Error saving survey response:', error);
-      // Continue with user feedback even if save fails
-    }
-    
-    setTimeout(() => {
-      if (response === 'not-interested') {
-        Alert.alert(
-          'Thanks for your feedback!',
-          'We appreciate your honesty. We\'ll focus on other features that better serve your needs.',
-          [{ text: 'OK', style: 'default' }]
-        );
-      } else if (response === 'maybe') {
-        Alert.alert(
-          'Thanks!',
-          `We'll consider your feedback as we develop ${serviceType}. We'll make sure to create something that truly adds value.`,
-          [{ text: 'OK', style: 'default' }]
-        );
-      } else {
-        Alert.alert(
-          'Fantastic!',
-          `We'll prioritize ${serviceType} and notify you when it's available. Your enthusiasm helps us build better features!`,
-          [{ text: 'OK', style: 'default' }]
-        );
-      }
-    }, 300);
-  };
-
-  const openSurvey = async (type: 'laundry' | 'delivery') => {
-    // Check if user has already responded to this service survey
-    try {
-      const checkResult = await surveyService.hasUserRespondedToService(type);
-      
-      if (checkResult.success && checkResult.hasResponded) {
-        const serviceTypeDisplay = type === 'laundry' ? 'laundry services' : 'delivery services';
-        Alert.alert(
-          'Already Submitted',
-          `Thank you! We've already received your feedback about ${serviceTypeDisplay}. We appreciate your interest!`,
-          [{ text: 'OK', style: 'default' }]
-        );
-        return;
-      }
-    } catch (error) {
-      if (__DEV__) console.warn('Error checking previous survey response:', error);
-      // Continue with survey even if check fails
-    }
-    
-    setSurveyType(type);
-    setShowSurveyModal(true);
-  };
 
   const renderFilters = () => (
     <Modal
@@ -518,158 +357,61 @@ export const SearchScreen: React.FC = () => {
     </Modal>
   );
 
-  const renderSurveyModal = () => {
-    const serviceTitle = surveyType === 'laundry' ? 'Palaba Services' : 'Pabakal Services';
-    const serviceDescription = surveyType === 'laundry' 
-      ? 'laundry and dry cleaning services' 
-      : 'food and grocery delivery services';
-
-    return (
-      <Modal
-        visible={showSurveyModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowSurveyModal(false)}
-      >
-        <View style={styles.surveyModalOverlay}>
-          <View style={styles.surveyModalContainer}>
-            <View style={styles.surveyModalHeader}>
-              <Text style={styles.surveyModalTitle}>Interest Survey</Text>
-              <TouchableOpacity
-                onPress={() => setShowSurveyModal(false)}
-                style={styles.surveyCloseButton}
-              >
-                <X size={24} color={colors.gray[600]} />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.surveyModalContent}>
-              <Text style={styles.surveyQuestion}>
-                Would you be interested in using {serviceDescription} through Beehauz?
-              </Text>
-              
-              {/* Email input for anonymous users */}
-              {!isAuthenticated && (
-                <View style={styles.emailInputContainer}>
-                  <Text style={styles.emailInputLabel}>Email (required for anonymous feedback)</Text>
-                  <TextInput
-                    style={styles.emailInput}
-                    placeholder="Enter your email address"
-                    placeholderTextColor={colors.text.tertiary}
-                    value={anonymousEmail}
-                    onChangeText={setAnonymousEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              )}
-              
-              <View style={styles.surveyOptions}>
-                <TouchableOpacity
-                  style={[styles.surveyOption, styles.surveyOptionNotInterested]}
-                  onPress={() => handleSurveyResponse('not-interested')}
-                >
-                  <Text style={styles.surveyOptionTextNotInterested}>Not Really</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.surveyOption, styles.surveyOptionMaybe]}
-                  onPress={() => handleSurveyResponse('maybe')}
-                >
-                  <Text style={styles.surveyOptionTextMaybe}>Maybe</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[styles.surveyOption, styles.surveyOptionInterested]}
-                  onPress={() => handleSurveyResponse('very-interested')}
-                >
-                  <Text style={styles.surveyOptionTextInterested}>Yes, Definitely!</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
 
   return (
     <View style={styles.container}>
       {renderFilters()}
-      <ScrollView showsVerticalScrollIndicator={false} bounces={true}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        nestedScrollEnabled
+        directionalLockEnabled
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
               <Text style={[typography.textStyles.h2, styles.title]}>
-                Beehauz
+                Find suitable boarding houses with Beehauz
               </Text>
               <Text style={[typography.textStyles.body, styles.subtitle]}>
-                Your one-stop student services app
+                Search by location, price, or school. Explore verified listings near your campus.
               </Text>
             </View>
-            <View style={styles.headerRight}>
-              <TouchableOpacity 
-                style={styles.likeHeaderButton}
-                onPress={() => {
-                  if (isAuthenticated) {
-                    // Navigate to FavoritesList screen for authenticated users
-                    navigation.navigate('FavoritesList');
-                  } else {
-                    // Show auth modal for guest users
-                    setCurrentFeature('save_favorites');
-                    setAuthPromptVisible(true);
-                  }
-                }}
-              >
-                <Heart size={24} color={colors.primary} fill={colors.primary} />
-                {hasUnviewedFavorites && (
-                  <View style={styles.likeBadge}>
-                    <Text style={styles.likeBadgeText}>!</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-               {/* <TouchableOpacity 
-                style={styles.filterHeaderButton}
-                onPress={() => {
-                  setShowFilters(!showFilters);
-                  // TODO: Implement filter modal/screen
-                  Alert.alert('Filters', 'Filter functionality coming soon!');
-                }}
-              >
-                <Filter size={24} color={colors.primary} />
-              </TouchableOpacity> */}
+          </View>
+
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <Search size={20} color={colors.gray[500]} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search boarding houses..."
+                value={searchText}
+                onChangeText={handleSearch}
+                placeholderTextColor={colors.gray[500]}
+              />
+            </View>
+
+            <View style={styles.mapButton}>
+              <MapPin size={32} color={colors.white} />
             </View>
           </View>
         </View>
 
-        {renderTabBar()}
-        
-        {/* Search Bar with Filter */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color={colors.gray[500]} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={`Search ${activeTab === 'properties' ? 'boarding houses' : activeTab === 'laundry' ? 'laundry services' : 'food delivery'}...`}
-              value={searchText}
-              onChangeText={handleSearch}
-              placeholderTextColor={colors.gray[500]}
-            />
-          </View>
-          <TouchableOpacity 
-            style={styles.filterButton}
-            onPress={() => setShowFilters(true)}
-          >
-            <Filter size={20} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
         
         <View style={styles.contentContainer}>
-          {renderContent()}
+          {renderProperties()}
         </View>
       </ScrollView>
-      {renderSurveyModal()}
+      <ServiceSurveyModal
+        visible={showSurveyModal}
+        surveyType={surveyType}
+        isAuthenticated={isAuthenticated}
+        anonymousEmail={anonymousEmail}
+        onChangeEmail={setAnonymousEmail}
+        onClose={closeSurvey}
+        onSubmit={submitSurveyResponse}
+      />
       
       {/* Auth Prompt Modal */}
       <AuthPromptModal
@@ -690,31 +432,32 @@ const styles = StyleSheet.create({
     paddingTop: 30,
   },
   header: {
-    padding: 20,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 12,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   headerLeft: {
     flex: 1,
     justifyContent: 'center',
-  },
-  headerRight: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   title: {
     color: colors.primary,
-    marginBottom: 8,
-    textAlign: 'left',
+    marginBottom: 6,
+    textAlign: 'center',
   },
   subtitle: {
-    color: '#666',
-    textAlign: 'left',
+    color: colors.gray[600],
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 12,
   },
   filterHeaderButton: {
     width: 40,
@@ -767,217 +510,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Figtree_700Bold',
   },
-
-  // New tab styles
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  activeTab: {
-    backgroundColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontFamily: 'Figtree_600SemiBold',
-  },
-  activeTabText: {
-    color: colors.white,
-  },
-  inactiveTabText: {
-    color: colors.gray[500],
-  },
-
-
   horizontalListContainer: {
     paddingBottom: 20,
     paddingRight: 20,
+  },
+  horizontalList: {
+    flexGrow: 0,
+  },
+  webGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 10,
+  },
+  webCardWrapper: {
+    width: '25%',
+    paddingBottom: 16,
+    minWidth: 240,
   },
   horizontalCardWrapper: {
     width: 280,
     marginHorizontal: 5,
   },
-
-  comingSoonContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-    height: 400,
-  },
-  comingSoonTitle: {
-    fontSize: 24,
-    fontFamily: 'Figtree_700Bold',
-    color: colors.gray[700],
-    marginTop: 24,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  comingSoonText: {
-    fontSize: 16,
-    fontFamily: 'Figtree_400Regular',
-    color: colors.gray[600],
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  surveyButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    marginTop: 24,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  surveyButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontFamily: 'Figtree_600SemiBold',
-    textAlign: 'center',
-  },
-  // Survey Modal Styles
-  surveyModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  surveyModalContainer: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    margin: 20,
-    maxWidth: 350,
-    width: '90%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  surveyModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  surveyModalTitle: {
-    fontSize: 18,
-    fontFamily: 'Figtree_700Bold',
-    color: colors.primary,
-  },
-  surveyCloseButton: {
-    padding: 4,
-  },
-  surveyModalContent: {
-    paddingBottom: 8,
-  },
-  surveyQuestion: {
-    fontSize: 16,
-    fontFamily: 'Figtree_400Regular',
-    color: colors.gray[700],
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  emailInputContainer: {
-    marginBottom: 20,
-  },
-  emailInputLabel: {
-    fontSize: 14,
-    fontFamily: 'Figtree_500Medium',
-    color: colors.gray[600],
-    marginBottom: 8,
-  },
-  emailInput: {
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    fontFamily: 'Figtree_400Regular',
-    backgroundColor: colors.background.primary,
-    color: colors.text.primary,
-  },
-  surveyOptions: {
-    gap: 12,
-  },
-  surveyOption: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  surveyOptionNotInterested: {
-    backgroundColor: '#f8f9fa',
-    borderColor: '#dee2e6',
-  },
-  surveyOptionMaybe: {
-    backgroundColor: '#fff3cd',
-    borderColor: '#ffc107',
-  },
-  surveyOptionInterested: {
-    backgroundColor: colors.primary,
-  },
-  surveyOptionTextNotInterested: {
-    fontSize: 16,
-    fontFamily: 'Figtree_600SemiBold',
-    color: '#6c757d',
-  },
-  surveyOptionTextMaybe: {
-    fontSize: 16,
-    fontFamily: 'Figtree_600SemiBold',
-    color: '#856404',
-  },
-  surveyOptionTextInterested: {
-    fontSize: 16,
-    fontFamily: 'Figtree_600SemiBold',
-    color: colors.white,
-  },
-  
-  // Search bar styles
   searchContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 16,
+    width: "100%",
     gap: 12,
+    marginTop: 10,
+    marginBottom: 8,
   },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: 500,
+    alignSelf: 'center',
     backgroundColor: colors.white,
-    borderRadius: 12,
+    borderRadius: 100,
+    borderWidth: 2,
+    borderColor: colors.primary,
     paddingHorizontal: 16,
     height: 48,
     elevation: 2,
@@ -989,6 +562,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     gap: 12,
+  },
+  mapButton: {
+    flex: 1,
+    maxWidth: 50,
+    backgroundColor: colors.primary,
+    color: colors.white,
+    borderRadius: 100,
+    height: 48,
+    padding: 12,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   searchInput: {
     flex: 1,
@@ -1018,8 +609,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   sectionTitle: {
-    color: colors.gray[800],
+    color: colors.primary,
     fontFamily: 'Figtree_600SemiBold',
+  },
+  sectionTitleDivider: {
+    flex: 1,
+    height: 2,
+    marginLeft: 12,
+    backgroundColor: colors.primary,
   },
   
   // Filter Modal Styles

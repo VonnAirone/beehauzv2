@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
 import { Search, Calendar, Bell, User, MapPin } from 'lucide-react-native';
 import { TenantStackParamList, TenantTabParamList } from './types';
 import { SearchScreen } from '../screens/tenant/search/SearchScreen';
@@ -14,70 +17,150 @@ import { FavoritesListScreen } from '../screens/tenant/favorites';
 import { PersonalInformationScreen, EditProfileScreen, AboutUsScreen } from '../screens/shared/profile';
 import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
 import { colors } from '../styles/colors';
+import { useResponsive } from '../hooks/useResponsive';
+import { DesktopSidebar } from '../components/common/DesktopSidebar';
 
 const Tab = createBottomTabNavigator<TenantTabParamList>();
 const Stack = createStackNavigator<TenantStackParamList>();
 
 const TenantTabs: React.FC = () => {
+  const { isDesktop, isWeb } = useResponsive();
+  const [activeTab, setActiveTab] = useState<string>('Search');
+  const navigation = useNavigation<StackNavigationProp<TenantStackParamList>>();
+
+  // Create navigation items with dynamic colors based on active tab
+  const getNavigationItems = () => [
+    {
+      name: 'Search',
+      label: 'Search',
+      icon: (
+        <Search
+          color={activeTab === 'Search' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+    {
+      name: 'Map',
+      label: 'Map',
+      icon: (
+        <MapPin
+          color={activeTab === 'Map' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+    {
+      name: 'MyBookings',
+      label: 'Bookings',
+      icon: (
+        <Calendar
+          color={activeTab === 'MyBookings' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+    {
+      name: 'Notifications',
+      label: 'Notifications',
+      icon: (
+        <Bell
+          color={activeTab === 'Notifications' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+    {
+      name: 'Profile',
+      label: 'Profile',
+      icon: (
+        <User
+          color={activeTab === 'Profile' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+  ];
+
+  const navigationItems = getNavigationItems();
+
+  const handleTabPress = (tabName: string) => {
+    setActiveTab(tabName);
+    navigation.navigate('TenantTabs', {
+      screen: tabName as keyof TenantTabParamList,
+    });
+  };
+
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray[400],
-        headerShown: false,
-      }}
-    >
-      <Tab.Screen 
-        name="Search" 
-        component={SearchScreen}
-        options={{
-          tabBarLabel: 'Search',
-          tabBarIcon: ({ color, size }) => (
-            <Search color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Map" 
-        component={MapScreen}
-        options={{
-          tabBarLabel: 'Map',
-          tabBarIcon: ({ color, size }) => (
-            <MapPin color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="MyBookings" 
-        component={MyBookingsScreen}
-        options={{
-          tabBarLabel: 'Bookings',
-          tabBarIcon: ({ color, size }) => (
-            <Calendar color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Notifications" 
-        component={NotificationsScreen}
-        options={{
-          tabBarLabel: 'Notifications',
-          tabBarIcon: ({ color, size }) => (
-            <Bell color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <User color={color} size={size} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+    <View style={styles.container}>
+      <View style={styles.content}>
+        <Tab.Navigator
+          screenOptions={{
+            tabBarActiveTintColor: colors.primary,
+            tabBarInactiveTintColor: colors.gray[400],
+            headerShown: false,
+            tabBarStyle: undefined,
+          }}
+          screenListeners={{
+            tabPress: (e) => {
+              const routeName = e.target?.split('-')[0] ?? '';
+              if (routeName) setActiveTab(routeName);
+            },
+          }}
+        >
+          <Tab.Screen 
+            name="Search" 
+            component={SearchScreen}
+            options={{
+              tabBarLabel: 'Search',
+              tabBarIcon: ({ color, size }) => (
+                <Search color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen 
+            name="Map" 
+            component={MapScreen}
+            options={{
+              tabBarLabel: 'Map',
+              tabBarIcon: ({ color, size }) => (
+                <MapPin color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen 
+            name="MyBookings" 
+            component={MyBookingsScreen}
+            options={{
+              tabBarLabel: 'Bookings',
+              tabBarIcon: ({ color, size }) => (
+                <Calendar color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen 
+            name="Notifications" 
+            component={NotificationsScreen}
+            options={{
+              tabBarLabel: 'Notifications',
+              tabBarIcon: ({ color, size }) => (
+                <Bell color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen 
+            name="Profile" 
+            component={ProfileScreen}
+            options={{
+              tabBarLabel: 'Profile',
+              tabBarIcon: ({ color, size }) => (
+                <User color={color} size={size} />
+              ),
+            }}
+          />
+        </Tab.Navigator>
+      </View>
+    </View>
   );
 };
 
@@ -99,3 +182,16 @@ export const TenantNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  content: {
+    flex: 1,
+  },
+  hiddenTabBar: {
+    display: 'none',
+  },
+});

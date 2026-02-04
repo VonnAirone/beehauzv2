@@ -10,7 +10,7 @@ import { GuestTrackingProvider } from './src/context/GuestTrackingContext';
 import { WelcomeProvider } from './src/context/WelcomeContext';
 import { AppRatingProvider, useAppRating } from './src/context/AppRatingContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
-import { AppRatingWrapper, HiddenAdminAccess } from './src/components/common';
+import { AppRatingWrapper, HiddenAdminAccess, ErrorBoundary } from './src/components/common';
 import { useFigtreeFonts } from './src/hooks/useFonts';
 
 // Component to track app opens
@@ -38,30 +38,32 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AppRatingProvider>
-        <WelcomeProvider>
-          <OnboardingProvider>
-            <AuthProvider>
-              <UserTypeProvider>
-                <FavoritesProvider>
-                  <GuestTrackingProvider>
-                    <HiddenAdminAccess>
-                      <AppNavigator />
-                      <StatusBar style="auto" />
-                      
-                      {/* Track app opens */}
-                      <AppOpenTracker />
-                      
-                      {/* Global App Rating Modal */}
-                      <AppRatingWrapper />
-                    </HiddenAdminAccess>
-                  </GuestTrackingProvider>
-                </FavoritesProvider>
-              </UserTypeProvider>
-            </AuthProvider>
-          </OnboardingProvider>
-        </WelcomeProvider>
-      </AppRatingProvider>
+      <ErrorBoundary>
+        <AppRatingProvider>
+          <WelcomeProvider>
+            <OnboardingProvider>
+              <AuthProvider>
+                <UserTypeProvider>
+                  <FavoritesProvider>
+                    <GuestTrackingProvider>
+                      <HiddenAdminAccess>
+                        <AppNavigator />
+                        <StatusBar style="auto" />
+                        
+                        {/* Track app opens */}
+                        <AppOpenTracker />
+                        
+                        {/* Global App Rating Modal */}
+                        <AppRatingWrapper />
+                      </HiddenAdminAccess>
+                    </GuestTrackingProvider>
+                  </FavoritesProvider>
+                </UserTypeProvider>
+              </AuthProvider>
+            </OnboardingProvider>
+          </WelcomeProvider>
+        </AppRatingProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 };
