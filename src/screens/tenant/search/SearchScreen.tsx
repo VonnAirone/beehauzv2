@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Image, Platform, ImageStyle } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Image, Platform, ImageStyle, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { Heart, Filter, Search, X, BookOpen, MapPin } from 'lucide-react-native';
 import { TenantStackParamList, TenantTabParamList } from '../../../navigation/types';
-import { BoardingHouseCard, ServiceSurveyModal } from '../../../components/tenant';
+import { BoardingHouseCard, ServiceSurveyModal, SearchFilterChips } from '../../../components/tenant';
+import { DEFAULT_PRICE_RANGES } from '../../../components/tenant/SearchFilterChips';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 import { sampleBoardingHouses } from '../../../data/sampleBoardingHouses';
@@ -28,6 +29,8 @@ type SearchScreenNavigationProp = CompositeNavigationProp<
 
 export const SearchScreen: React.FC = () => {
   const isWeb = Platform.OS === 'web';
+  const { width: windowWidth } = useWindowDimensions();
+  const isSmallScreen = windowWidth < 768;
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const { hasUnviewedFavorites } = useFavorites();
   const { isAuthenticated } = useAuth();
@@ -119,28 +122,14 @@ export const SearchScreen: React.FC = () => {
   };
 
   const renderPropertiesSection = () => {
-    // Apply filters to all properties first
     const allFilteredProperties = filterProperties(sampleBoardingHouses);
-    
-    // Limit properties for guest users - show first 7 properties only (disabled during beta testing)
+
     const displayedProperties = isAuthenticated || hasReachedViewLimit || BETA_TESTING_MODE
       ? allFilteredProperties 
       : allFilteredProperties.slice(0, 7);
     
     return (
       <View>
-        <View style={styles.sectionHeaderWithFilter}>
-          <Text style={[typography.textStyles.h3, styles.sectionTitle]}>
-            {isFilterActive() ? `Results (${allFilteredProperties.length})` : 'List of Boarding Houses'}
-          </Text>
-          <View style={styles.sectionTitleDivider} />
-          {isFilterActive() && (
-            <TouchableOpacity onPress={clearAllFilters}>
-              <Text style={styles.clearFilterText}>Clear Filter</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        
         {/* Guest View Progress Banner */}
         <GuestViewProgressBanner />
         
@@ -154,7 +143,9 @@ export const SearchScreen: React.FC = () => {
         ) : isWeb ? (
           <View style={styles.webGrid}>
             {displayedProperties.map((item) => (
-              <View key={item.id} style={styles.webCardWrapper}>
+              <View key={item.id} style={[styles.webCardWrapper,
+                { minWidth: isSmallScreen ? '50%' : '25%'}
+              ]}>
                 <BoardingHouseCard
                   boardingHouse={item}
                   onPress={() => handlePropertyPress(item)}
@@ -230,18 +221,8 @@ export const SearchScreen: React.FC = () => {
   const renderProperties = () => (
     <View>
       {renderPropertiesSection()}
-      {renderBlogSection()}
     </View>
   );
-
-
-  const priceRanges = [
-    { label: 'Under ₱2,000', min: 0, max: 2000 },
-    { label: '₱2,000 - ₱3,000', min: 2000, max: 3000 },
-    { label: '₱3,000 - ₱4,000', min: 3000, max: 4000 },
-    { label: '₱4,000 - ₱5,000', min: 4000, max: 5000 },
-    { label: 'Above ₱5,000', min: 5000, max: 10000 },
-  ];
 
 
   const renderFilters = () => (
@@ -315,7 +296,7 @@ export const SearchScreen: React.FC = () => {
           <View style={styles.filterSection}>
             <Text style={[typography.textStyles.h4, styles.filterSectionTitle]}>Price Range</Text>
             <View style={styles.priceOptions}>
-              {priceRanges.map((range, index) => (
+              {DEFAULT_PRICE_RANGES.map((range, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[
@@ -396,6 +377,17 @@ export const SearchScreen: React.FC = () => {
               <MapPin size={32} color={colors.white} />
             </View>
           </View>
+
+          <SearchFilterChips
+            initialSelectedSchool={selectedSchool}
+            initialPriceRange={priceRange}
+            schools={POPULAR_SCHOOLS}
+            onChange={({ selectedSchool: nextSchool, priceRange: nextRange }) => {
+              setSelectedSchool(nextSchool);
+              setPriceRange(nextRange);
+            }}
+            onMoreFilters={() => setShowFilters(true)}
+          />
         </View>
 
         
@@ -403,6 +395,7 @@ export const SearchScreen: React.FC = () => {
           {renderProperties()}
         </View>
       </ScrollView>
+
       <ServiceSurveyModal
         visible={showSurveyModal}
         surveyType={surveyType}
@@ -428,7 +421,8 @@ export const SearchScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    width: '95%',
+    margin: 'auto',
     paddingTop: 30,
   },
   header: {
@@ -524,8 +518,7 @@ const styles = StyleSheet.create({
   },
   webCardWrapper: {
     width: '25%',
-    paddingBottom: 16,
-    minWidth: 240,
+    paddingBottom: 16
   },
   horizontalCardWrapper: {
     width: 280,

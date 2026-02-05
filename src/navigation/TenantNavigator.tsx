@@ -99,7 +99,7 @@ const TenantTabs: React.FC = () => {
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.gray[400],
             headerShown: false,
-            tabBarStyle: undefined,
+            tabBarStyle: isWeb ? styles.hiddenTabBar : undefined,
           }}
           screenListeners={{
             tabPress: (e) => {

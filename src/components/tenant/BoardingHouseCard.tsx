@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Star, MapPin, Bed, Zap, Droplets, Users } from 'lucide-react-native';
 import { BoardingHouse } from '../../types/tenant';
 import { Card } from '../common/Card';
@@ -34,6 +34,9 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   const formatPrice = (price: number) => {
     return `₱${price.toLocaleString()}`;
   };
+
+  const { width: windowWidth } = useWindowDimensions();
+  const isSmallScreen = windowWidth < 768;
 
   const renderRating = () => (
     <View>
@@ -120,7 +123,9 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
             </Text>
           </View>
 
-          <View style={styles.bedsAndPrice}>
+          <View style={[styles.bedsAndPrice,
+            { flexDirection: isSmallScreen ? 'column' : 'row', alignItems: isSmallScreen ? 'flex-start' : 'center' }
+          ]}>
             <Text style={[typography.textStyles.h4, styles.price]}>
               {formatPrice(ratePerMonth)}/month
             </Text>
@@ -219,7 +224,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bedsAndPrice: {
-    flexDirection: 'row',
+    // flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8

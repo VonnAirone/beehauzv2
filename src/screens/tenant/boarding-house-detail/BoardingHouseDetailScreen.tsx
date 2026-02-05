@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
-import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3 } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3, House, Check } from 'lucide-react-native';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 import { Button, AuthPromptModal } from '../../../components/common';
@@ -30,6 +30,8 @@ export const BoardingHouseDetailScreen: React.FC = () => {
   const [roomInfoModalVisible, setRoomInfoModalVisible] = React.useState(false);
   const [authPromptVisible, setAuthPromptVisible] = React.useState(false);
   const [currentFeature, setCurrentFeature] = React.useState<FeatureType>('save_favorites');
+  const { width: windowWidth } = useWindowDimensions();
+  const isSmallScreen = windowWidth < 768;
 
   // Track property view for guests (disabled during beta testing) and rating system
   React.useEffect(() => {
@@ -194,14 +196,19 @@ export const BoardingHouseDetailScreen: React.FC = () => {
     ? allReviews 
     : allReviews.slice(0, GUEST_LIMITS.MAX_REVIEWS_VIEW);
 
+  const gridImages = Array.from({ length: 2 }, (_, index) => boardingHouse.images?.[index] ?? null);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, {
+      width: isSmallScreen ? '95%' : '70%'
+    }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <ArrowLeft size={24} color={colors.white} />
+          <House size={24} color={colors.primary} />
+          <Text style={{color: colors.primary}}>Go back</Text>
         </TouchableOpacity>
-        <Text style={[typography.textStyles.h4, styles.headerTitle]}>Property Details</Text>
+        
         <TouchableOpacity style={styles.likeButton} onPress={handleLike}>
           <Heart 
             size={24} 
@@ -212,31 +219,51 @@ export const BoardingHouseDetailScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Main Image */}
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: boardingHouse.images[0] }} style={styles.mainImage} />
+        <View style={styles.imageGrid}>
+          {gridImages.map((uri, index) => (
+            <View key={`grid-${index}`} style={styles.imageCell}>
+              {uri ? (
+                <Image source={{ uri }} style={styles.imageFill} />
+              ) : (
+                <View style={styles.imagePlaceholder} />
+              )}
+            </View>
+          ))}
           <View style={styles.ratingBadge}>
             <Star size={16} color="#FFD700" fill="#FFD700" />
             <Text style={styles.ratingText}>{boardingHouse.rating}</Text>
           </View>
         </View>
 
+        <View style={styles.amenitiesChipSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.amenitiesChipRow}
+          >
+            {boardingHouse.amenities.map((amenity, index) => (
+              <View key={`${amenity}-${index}`} style={styles.amenityChip}>
+                <Check size={14} color={colors.primary} />
+                <Text style={styles.amenityChipText}>{amenity}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* Basic Info */}
         <View style={styles.infoSection}>
-          <Text style={[typography.textStyles.h2, styles.propertyName]}>{boardingHouse.name}</Text>
-          <View style={styles.locationRow}>
-            <MapPin size={16} color={colors.gray[600]} />
-            <Text style={[typography.textStyles.body, styles.location]}>{boardingHouse.location}</Text>
+          <View>
+            <Text style={[typography.textStyles.h2, styles.propertyName]}>{boardingHouse.name}</Text>
+            <View style={styles.locationRow}>
+              <MapPin size={16} color={colors.gray[600]} />
+              <Text style={[typography.textStyles.body, styles.location]}>{boardingHouse.location}</Text>
+            </View>
           </View>
-          {boardingHouse.roomTypes && boardingHouse.roomTypes.length > 1 ? (
-            <Text style={[typography.textStyles.body, styles.multipleRoomsText]}>
-              Multiple room types available
-            </Text>
-          ) : (
-            <Text style={[typography.textStyles.h3, styles.price]}>
-              ₱{boardingHouse.ratePerMonth.toLocaleString()}/month
-            </Text>
-          )}
+
+
+          <Text style={[typography.textStyles.bodySmall, styles.description]}>
+            {boardingHouse.description || `Experience comfortable living at ${boardingHouse.name}. This well-maintained boarding house offers excellent facilities and a convenient location perfect for students and professionals. Enjoy a safe and friendly environment with all the amenities you need for a comfortable stay.`}
+          </Text>
         </View>
 
         {/* Room Types */}
@@ -245,7 +272,11 @@ export const BoardingHouseDetailScreen: React.FC = () => {
             <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Available Room Types</Text>
             <View style={styles.roomTypesContainer}>
               {boardingHouse.roomTypes.map((roomType, index) => (
-                <View key={index} style={styles.roomTypeCard}>
+                <View key={index} style={[styles.roomTypeCard, 
+                  {
+                    width: isSmallScreen ? '48%' : '30%'
+                  }
+                ]}>
                   <View style={styles.roomTypeHeader}>
                     <View style={styles.roomTypeIconContainer}>
                       <Users size={20} color={colors.primary} />
@@ -303,30 +334,6 @@ export const BoardingHouseDetailScreen: React.FC = () => {
             </View>
           </View>
         )}
-
-        {/* Description */}
-        <View style={styles.section}>
-          <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Description</Text>
-          <Text style={[typography.textStyles.body, styles.description]}>
-            {boardingHouse.description || `Experience comfortable living at ${boardingHouse.name}. This well-maintained boarding house offers excellent facilities and a convenient location perfect for students and professionals. Enjoy a safe and friendly environment with all the amenities you need for a comfortable stay.`}
-          </Text>
-        </View>
-
-        {/* Amenities */}
-        <View style={styles.section}>
-          <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Amenities</Text>
-          <View style={styles.amenitiesGrid}>
-            {boardingHouse.amenities.map((amenity, index) => {
-              const IconComponent = amenityIcons[amenity] || Wifi;
-              return (
-                <View key={index} style={styles.amenityItem}>
-                  <IconComponent size={20} color={colors.primary} />
-                  <Text style={[typography.textStyles.body, styles.amenityText]}>{amenity}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
 
         {/* Payment Terms */}
         <View style={styles.section}>
@@ -560,18 +567,20 @@ export const BoardingHouseDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    margin: 'auto',
+    marginTop: 20
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: colors.primary,
   },
   backButton: {
     padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center', 
+    gap: 10
   },
   headerTitle: {
     color: colors.white,
@@ -584,14 +593,52 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  imageContainer: {
-    position: 'relative',
-    height: 250,
+  amenitiesChipSection: {
+    paddingTop: 20,
   },
-  mainImage: {
+  amenitiesChipRow: {
+    gap: 8,
+    paddingBottom: 6,
+  },
+  amenityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.gray[50],
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  amenityChipText: {
+    color: colors.gray[700],
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
+  },
+  imageGrid: {
+    position: 'relative',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingTop: 8,
+  },
+  imageCell: {
+    width: '49%',
+    aspectRatio: 1.2,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.gray[100],
+  },
+  imageFill: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  imagePlaceholder: {
+    flex: 1,
+    backgroundColor: colors.gray[100],
   },
   ratingBadge: {
     position: 'absolute',
@@ -611,7 +658,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   infoSection: {
-    padding: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
   },
@@ -633,7 +680,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   section: {
-    padding: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
   },
@@ -754,10 +801,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   roomTypesContainer: {
+    flexDirection: 'row',
     gap: 12,
   },
   roomTypeCard: {
     backgroundColor: colors.gray[50],
+    width: '48%',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,

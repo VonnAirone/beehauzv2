@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthNavigator } from './AuthNavigator';
 import { OwnerNavigator } from './OwnerNavigator';
@@ -16,6 +16,13 @@ import { colors } from '../styles/colors';
 const Stack = createStackNavigator<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
+  const navTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: '#F7F8FA',
+    },
+  };
   const { isAuthenticated, user } = useAuthContext();
   const { userType } = useUserType();
   const { isOnboardingCompleted, completeOnboarding, isLoading: onboardingLoading } = useOnboarding();
@@ -34,7 +41,7 @@ export const AppNavigator: React.FC = () => {
   const showOnboarding = !onboardingLoading && isWelcomeCompleted && !isOnboardingCompleted;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       <View style={styles.appContainer}>
         <View style={styles.appHeader}>
           <Image source={require('../assets/logo-wordmark.png')} style={styles.logoImage} />
