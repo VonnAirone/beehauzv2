@@ -96,43 +96,7 @@ export const POPULAR_SCHOOLS = [
     shortName: 'WTC',
     location: 'Sibalom, Antique',
     coordinates: { latitude: 10.7920, longitude: 122.0080 }
-  },
-  // Additional universities
-  {
-    id: 'up-visayas',
-    name: 'University of the Philippines Visayas',
-    shortName: 'UPV',
-    location: 'Iloilo City',
-    coordinates: { latitude: 10.7202, longitude: 122.5621 }
-  },
-  {
-    id: 'central-phil-uni',
-    name: 'Central Philippine University',
-    shortName: 'CPU',
-    location: 'Iloilo City',
-    coordinates: { latitude: 10.7058, longitude: 122.5644 }
-  },
-  {
-    id: 'west-visayas',
-    name: 'West Visayas State University',
-    shortName: 'WVSU',
-    location: 'Iloilo City',
-    coordinates: { latitude: 10.7292, longitude: 122.5622 }
-  },
-  {
-    id: 'iloilo-science-tech',
-    name: 'Iloilo Science and Technology University',
-    shortName: 'ISAT U',
-    location: 'Iloilo City',
-    coordinates: { latitude: 10.7202, longitude: 122.5621 }
-  },
-  {
-    id: 'other',
-    name: 'Other University',
-    shortName: 'Other',
-    location: 'Please specify',
-    coordinates: { latitude: 0, longitude: 0 }
-  },
+  }
 ] as const;
 
 export const SEARCH_FILTERS = {
