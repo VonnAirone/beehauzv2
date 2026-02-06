@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { X } from 'lucide-react-native';
+import { Eye, EyeOff, X } from 'lucide-react-native';
 import { Button, Input } from '../../components/common';
 import { useAuthContext } from '../../context/AuthContext';
 import { useUserType } from '../../context/UserTypeContext';
@@ -176,111 +176,117 @@ export const SignupScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <X size={24} color={colors.gray[600]} />
-          </TouchableOpacity>
-          
-          <View style={styles.header}>
-            <Text style={[typography.textStyles.h1, styles.title]}>
-              Create Account
-            </Text>
-            <Text style={[typography.textStyles.body, styles.subtitle]}>
-              Create Your Account
-            </Text>
-          </View>
-
-          <View style={styles.form}>
-            <Input
-              label="Full Name"
-              placeholder="Enter your full name"
-              value={formData.fullName}
-              onChangeText={(value) => handleInputChange('fullName', value)}
-              error={errors.fullName}
-              autoCapitalize="words"
-            />
-
-            <Input
-              label="Email Address"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <View>
-              <Input
-                label="Password"
-                placeholder="Create a password"
-                value={formData.password}
-                onChangeText={(value) => handleInputChange('password', value)}
-                error={errors.password}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.passwordToggle}
-                onPress={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
-              >
-                <Text style={styles.passwordToggleText}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View>
-              <Input
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChangeText={(value) => handleInputChange('confirmPassword', value)}
-                error={errors.confirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.passwordToggle}
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={isLoading}
-              >
-                <Text style={styles.passwordToggleText}>
-                  {showConfirmPassword ? 'Hide' : 'Show'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <Button
-              title={isLoading ? 'Creating Account...' : 'Create Account'}
-              onPress={handleSignup}
-              disabled={isLoading}
-              style={styles.signupButton}
-            />
+          <View style={styles.card}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <X size={24} color={colors.gray[600]} />
+            </TouchableOpacity>
             
-            {isLoading && (
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-                style={styles.loader}
-              />
-            )}
-
-            <View style={styles.loginPrompt}>
-              <Text style={[typography.textStyles.body, styles.loginText]}>
-                Already have an account?{' '}
-                <Text 
-                  style={[typography.textStyles.body, styles.loginLink]}
-                  onPress={handleLogin}
-                >
-                  Login
-                </Text>
+            <View style={styles.header}>
+              <Text style={[typography.textStyles.h1, styles.title]}>
+                Create Account
               </Text>
+              <Text style={[typography.textStyles.body, styles.subtitle]}>
+                Join Beehauz to save favorites and contact owners.
+              </Text>
+            </View>
+
+            <View style={styles.form}>
+              <Input
+                label="Full Name"
+                placeholder="Enter your full name"
+                value={formData.fullName}
+                onChangeText={(value) => handleInputChange('fullName', value)}
+                error={errors.fullName}
+                autoCapitalize="words"
+              />
+
+              <Input
+                label="Email Address"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChangeText={(value) => handleInputChange('email', value)}
+                error={errors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <View>
+                <Input
+                  label="Password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChangeText={(value) => handleInputChange('password', value)}
+                  error={errors.password}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={styles.passwordToggle}
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={colors.primary} />
+                  ) : (
+                    <Eye size={18} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View>
+                <Input
+                  label="Confirm Password"
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChangeText={(value) => handleInputChange('confirmPassword', value)}
+                  error={errors.confirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={styles.passwordToggle}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} color={colors.primary} />
+                  ) : (
+                    <Eye size={18} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.actions}>
+              <Button
+                title={isLoading ? 'Creating Account...' : 'Create Account'}
+                onPress={handleSignup}
+                disabled={isLoading}
+                style={styles.signupButton}
+              />
+              
+              {isLoading && (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={styles.loader}
+                />
+              )}
+
+              <View style={styles.loginPrompt}>
+                <Text style={[typography.textStyles.body, styles.loginText]}>
+                  Already have an account?{' '}
+                  <Text 
+                    style={[typography.textStyles.body, styles.loginLink]}
+                    onPress={handleLogin}
+                  >
+                    Login
+                  </Text>
+                </Text>
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -303,7 +309,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: spacing[6], // 24px
-    paddingVertical: spacing[8], // 32px
+    paddingVertical: spacing[6], // 24px
+    alignItems: 'center',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    paddingHorizontal: 40,
+    paddingVertical: spacing[6],
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
   closeButton: {
     position: 'absolute',
@@ -322,6 +344,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.gray[600],
+    fontSize: 14,
     textAlign: 'center',
   },
   form: {

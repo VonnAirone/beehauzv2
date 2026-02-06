@@ -5,7 +5,7 @@ import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
 import { useGuestTracking } from '../../context/GuestTrackingContext';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthContext } from '../../context/AuthContext';
 import { useUserType } from '../../context/UserTypeContext';
 import { GUEST_LIMITS, BETA_TESTING_MODE } from '../../utils/guestAccess';
 
@@ -16,7 +16,7 @@ interface GuestViewProgressBannerProps {
 export const GuestViewProgressBanner: React.FC<GuestViewProgressBannerProps> = ({
   onSignUpPress,
 }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthContext();
   const { viewedPropertiesCount, hasReachedViewLimit } = useGuestTracking();
   const { clearUserType } = useUserType();
 

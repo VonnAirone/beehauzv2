@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { X } from 'lucide-react-native';
+import { Eye, EyeOff, X } from 'lucide-react-native';
 import { Button, Input } from '../../components/common';
 import { useAuthContext } from '../../context/AuthContext';
 import { useUserType } from '../../context/UserTypeContext';
@@ -151,91 +151,91 @@ export const LoginScreen: React.FC = () => {
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <X size={24} color={colors.gray[600]} />
-          </TouchableOpacity>
-          
-          <View style={styles.header}>
-            <Text style={[typography.textStyles.h1, styles.title]}>
-              Welcome Back
-            </Text>
-            <Text style={[typography.textStyles.body, styles.subtitle]}>
-              Welcome Back
-            </Text>
-          </View>
+        <View style={styles.page}>
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <Text style={[typography.textStyles.h1, styles.title]}>
+                Welcome Back
+              </Text>
+              <Text style={[typography.textStyles.body, styles.subtitle]}>
+                Sign in to continue exploring accredited boarding houses.
+              </Text>
+            </View>
 
-          <View style={styles.form}>
-            <Input
-              label="Email Address"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <View>
+            <View style={styles.form}>
               <Input
-                label="Password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChangeText={(value) => handleInputChange('password', value)}
-                error={errors.password}
-                secureTextEntry={!showPassword}
+                label="Email Address"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChangeText={(value) => handleInputChange('email', value)}
+                error={errors.email}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
+
+              <View>
+                <Input
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChangeText={(value) => handleInputChange('password', value)}
+                  error={errors.password}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={styles.passwordToggle}
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={colors.primary} />
+                  ) : (
+                    <Eye size={18} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity
-                style={styles.passwordToggle}
-                onPress={() => setShowPassword(!showPassword)}
+                style={styles.forgotPassword}
+                onPress={handleForgotPassword}
                 disabled={isLoading}
               >
-                <Text style={styles.passwordToggleText}>
-                  {showPassword ? 'Hide' : 'Show'}
+                <Text style={[typography.textStyles.caption, styles.forgotText]}>
+                  Forgot Password?
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={styles.forgotPassword}
-              onPress={handleForgotPassword}
-              disabled={isLoading}
-            >
-              <Text style={[typography.textStyles.caption, styles.forgotText]}>
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.actions}>
-            <Button
-              title={isLoading ? 'Signing In...' : 'Sign In'}
-              onPress={handleLogin}
-              disabled={isLoading}
-              style={styles.loginButton}
-            />
-            
-            {isLoading && (
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-                style={styles.loader}
+            <View style={styles.actions}>
+              <Button
+                title={isLoading ? 'Signing In...' : 'Sign In'}
+                onPress={handleLogin}
+                disabled={isLoading}
+                style={styles.loginButton}
               />
-            )}
+              
+              {isLoading && (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                  style={styles.loader}
+                />
+              )}
 
-            <View style={styles.signupPrompt}>
-              <Text style={[typography.textStyles.body, styles.signupText]}>
-                Don't have an account?{' '}
-                <Text 
-                  style={[typography.textStyles.body, styles.signupLink]}
-                  onPress={handleSignup}
-                >
-                  Create Account
+              <View style={styles.signupPrompt}>
+                <Text style={[typography.textStyles.body, styles.signupText]}>
+                  Don't have an account?{' '}
+                  <Text 
+                    style={[typography.textStyles.body, styles.signupLink]}
+                    onPress={handleSignup}
+                  >
+                    Create Account
+                  </Text>
                 </Text>
-              </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -252,11 +252,27 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
-  content: {
+  page: {
     flex: 1,
-    paddingHorizontal: spacing[6], // 24px
-    paddingVertical: spacing[8], // 32px
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[6],
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    paddingHorizontal: 40,
+    paddingVertical: 40,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
   closeButton: {
     position: 'absolute',
@@ -275,6 +291,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: colors.gray[600],
+    fontSize: 14,
     textAlign: 'center',
   },
   form: {
@@ -312,7 +329,7 @@ const styles = StyleSheet.create({
   passwordToggle: {
     position: 'absolute',
     right: 12,
-    top: 38,
+    top: 42,
     padding: 4,
     zIndex: 1,
   },

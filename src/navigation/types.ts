@@ -3,10 +3,8 @@ import { BoardingHouse } from '../types/tenant';
 import { BlogPost } from '../data/sampleBlogPosts';
 
 export type RootStackParamList = {
-  Welcome: undefined;
-  Onboarding: undefined;
   Auth: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<TenantStackParamList> | NavigatorScreenParams<OwnerStackParamList>;
 };
 
 export type AuthStackParamList = {
@@ -48,6 +46,7 @@ export type TenantStackParamList = {
   FavoritesList: undefined;
   PersonalInformation: undefined;
   EditProfile: undefined;
+  StudentProfile: undefined;
   PrivacyPolicy: undefined;
   AboutUs: undefined;
   Gallery: { houseId: string };

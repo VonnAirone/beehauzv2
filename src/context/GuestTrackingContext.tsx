@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GUEST_LIMITS, BETA_TESTING_MODE } from '../utils/guestAccess';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from './AuthContext';
 
 interface GuestTrackingContextType {
   viewedPropertiesCount: number;
@@ -18,7 +18,7 @@ const STORAGE_KEY = 'guest_viewed_properties';
 export const GuestTrackingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [viewedProperties, setViewedProperties] = useState<Set<string>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthContext();
 
   // Load viewed properties from storage on app start
   useEffect(() => {
