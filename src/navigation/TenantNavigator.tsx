@@ -14,6 +14,7 @@ import { ProfileScreen } from '../screens/shared/profile/ProfileScreen';
 import { BoardingHouseDetailScreen } from '../screens/tenant/boarding-house-detail';
 import { BlogDetailScreen } from '../screens/tenant/blog';
 import { FavoritesListScreen } from '../screens/tenant/favorites';
+import { StudentProfileScreen } from '../screens/tenant/profile/StudentProfileScreen';
 import { PersonalInformationScreen, EditProfileScreen, AboutUsScreen } from '../screens/shared/profile';
 import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
 import { colors } from '../styles/colors';
@@ -175,6 +176,7 @@ export const TenantNavigator: React.FC = () => {
       <Stack.Screen name="BoardingHouseDetail" component={BoardingHouseDetailScreen} />
       <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
       <Stack.Screen name="FavoritesList" component={FavoritesListScreen} />
+      <Stack.Screen name="StudentProfile" component={StudentProfileScreen} />
       <Stack.Screen name="PersonalInformation" component={PersonalInformationScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />

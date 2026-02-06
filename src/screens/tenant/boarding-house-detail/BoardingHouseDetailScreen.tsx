@@ -2,17 +2,19 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal, useWindowDimensions, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3, House, Check } from 'lucide-react-native';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 import { Button, AuthPromptModal } from '../../../components/common';
 import { BoardingHouse } from '../../../types/tenant';
 import { useFavorites } from '../../../context/FavoritesContext';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuthContext } from '../../../context/AuthContext';
 import { useGuestTracking } from '../../../context/GuestTrackingContext';
 import { useUserType } from '../../../context/UserTypeContext';
 import { canAccessFeature, FeatureType, BETA_TESTING_MODE } from '../../../utils/guestAccess';
 import { useAppRating } from '../../../context/AppRatingContext';
+import { TenantStackParamList } from '../../../navigation/types';
 
 type BoardingHouseDetailRouteProp = RouteProp<{
   BoardingHouseDetail: { boardingHouse: BoardingHouse };
@@ -20,10 +22,10 @@ type BoardingHouseDetailRouteProp = RouteProp<{
 
 export const BoardingHouseDetailScreen: React.FC = () => {
   const route = useRoute<BoardingHouseDetailRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<TenantStackParamList>>();
   const { boardingHouse } = route.params;
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthContext();
   const { trackPropertyView, shouldShowAuthPrompt } = useGuestTracking();
   const { clearUserType } = useUserType();
   const { incrementTrigger } = useAppRating();
@@ -201,16 +203,20 @@ export const BoardingHouseDetailScreen: React.FC = () => {
       }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <House size={24} color={colors.primary} />
-          <Text style={{color: colors.primary}}>Go back</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.navigate('TenantTabs', { screen: 'Search' })}
+        >
+          <ArrowLeft size={22} color={colors.gray[700]} />
         </TouchableOpacity>
+
+        <Text style={[typography.textStyles.h3, styles.headerTitle]}>Property Details</Text>
         
         <TouchableOpacity style={styles.likeButton} onPress={handleLike}>
           <Heart 
             size={24} 
             color={colors.primary} 
-            fill={isFavorite(boardingHouse.id) ? colors.white : 'transparent'}
+            fill={isFavorite(boardingHouse.id) ? colors.primary : 'transparent'}
           />
         </TouchableOpacity>
       </View>
@@ -602,7 +608,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 5
+    paddingVertical: 20,
   },
   backButton: {
     paddingVertical: 8,
@@ -611,7 +617,7 @@ const styles = StyleSheet.create({
     gap: 10
   },
   headerTitle: {
-    color: colors.white,
+    color: colors.black,
     flex: 1,
     textAlign: 'center',
   },
@@ -731,9 +737,12 @@ const styles = StyleSheet.create({
   },
   roomPaymentColumn: {
     flexDirection: 'column',
+    alignItems: 'stretch',
   },
   roomPaymentSection: {
     width: '100%',
+    minWidth: 0,
+    flexShrink: 1,
   },
   roomPaymentSectionWide: {
     flex: 1,

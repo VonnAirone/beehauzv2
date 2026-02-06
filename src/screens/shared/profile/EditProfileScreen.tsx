@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ArrowLeft, Save } from 'lucide-react-native';
@@ -12,6 +12,11 @@ import { colors } from '../../../styles/colors';
 import { COUNTRY_CODES, POPULAR_SCHOOLS } from '../../../utils/constants';
 
 type EditProfileScreenNavigationProp = StackNavigationProp<TenantStackParamList, 'EditProfile'>;
+
+interface EditProfileScreenProps {
+  onClose?: () => void;
+  variant?: 'modal' | 'page';
+}
 
 interface ProfileFormData {
   fullName: string;
@@ -104,9 +109,20 @@ const validateDateOfBirth = (dateOfBirth: string): string | undefined => {
   return undefined;
 };
 
-export const EditProfileScreen: React.FC = () => {
+export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onClose, variant = 'page' }) => {
   const navigation = useNavigation<EditProfileScreenNavigationProp>();
   const { user, refreshUser } = useAuthContext();
+  const { width: windowWidth } = useWindowDimensions();
+  const isSmallScreen = windowWidth < 768;
+  const isModal = variant === 'modal';
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
+
+    navigation.goBack();
+  };
   
   // Parse existing phone number to separate country code and number
   const parsePhoneNumber = (fullPhone: string) => {
@@ -242,7 +258,7 @@ export const EditProfileScreen: React.FC = () => {
           [
             {
               text: 'OK',
-              onPress: () => navigation.goBack(),
+              onPress: handleClose,
             },
           ]
         );
@@ -272,15 +288,19 @@ export const EditProfileScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[
+        styles.container,
+        isModal ? styles.containerModal : { width: isSmallScreen ? '95%' : '70%' }
+      ]} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isModal && styles.headerModal]}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={handleClose}
         >
           <ArrowLeft size={24} color={colors.gray[700]} />
         </TouchableOpacity>
@@ -298,7 +318,7 @@ export const EditProfileScreen: React.FC = () => {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContainer}
+        contentContainerStyle={[styles.scrollContainer, isModal && styles.scrollContainerModal]}
       >
         <View style={styles.form}>
           <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Personal Information</Text>
@@ -382,7 +402,7 @@ export const EditProfileScreen: React.FC = () => {
           <Button
             title="Cancel"
             variant="outline"
-            onPress={() => navigation.goBack()}
+            onPress={handleClose}
             disabled={isLoading}
             style={styles.cancelButton}
           />
@@ -397,6 +417,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.gray[50],
   },
+  containerModal: {
+    width: '100%',
+    backgroundColor: colors.white,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -407,6 +431,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
+  },
+  headerModal: {
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   backButton: {
     padding: 4,
@@ -424,6 +452,9 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 40,
+  },
+  scrollContainerModal: {
+    paddingBottom: 24,
   },
   form: {
     padding: 20,

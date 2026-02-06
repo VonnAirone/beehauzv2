@@ -13,7 +13,7 @@ import { colors } from '../../../styles/colors';
 import { sampleBoardingHouses } from '../../../data/sampleBoardingHouses';
 import { sampleBlogPosts } from '../../../data/sampleBlogPosts';
 import { useFavorites } from '../../../context/FavoritesContext';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuthContext } from '../../../context/AuthContext';
 import { useGuestTracking } from '../../../context/GuestTrackingContext';
 import { useUserType } from '../../../context/UserTypeContext';
 import { GuestViewProgressBanner, AuthPromptModal } from '../../../components/common';
@@ -33,7 +33,7 @@ export const SearchScreen: React.FC = () => {
   const isSmallScreen = windowWidth < 768;
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const { hasUnviewedFavorites } = useFavorites();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthContext();
   const { hasReachedViewLimit } = useGuestTracking();
   const { clearUserType } = useUserType();
   const { incrementTrigger } = useAppRating();
