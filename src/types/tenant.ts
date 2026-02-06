@@ -36,6 +36,7 @@ export interface BoardingHouse {
     id: string;
     name: string;
     profileImage?: string;
+    phone?: string;
   };
   reviewCount: number;
   distance?: number;

@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
   },
   signUpButtonText: {
     ...typography.textStyles.button,
+    ...typography.textStyles.bodySmall,
     color: colors.white,
   },
   loginButton: {
@@ -143,6 +144,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     ...typography.textStyles.body,
+    ...typography.textStyles.bodySmall,
     color: colors.primary,
   },
   closeButton: {

@@ -1,5 +1,5 @@
-// Base API configuration
-const API_BASE_URL = 'https://your-api-url.com/api';
+// Base REST API configuration
+const REST_API_BASE_URL = 'https://your-api-url.com/api';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -8,11 +8,11 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export class ApiClient {
+export class RestClient {
   private baseURL: string;
   private authToken: string | null = null;
 
-  constructor(baseURL: string = API_BASE_URL) {
+  constructor(baseURL: string = REST_API_BASE_URL) {
     this.baseURL = baseURL;
   }
 
@@ -89,4 +89,4 @@ export class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient();
+export const restClient = new RestClient();

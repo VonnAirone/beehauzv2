@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
-import { Star, MapPin, Bed, Zap, Droplets, Users } from 'lucide-react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, useWindowDimensions, Alert } from 'react-native';
+import { Star, MapPin, Bed, Zap, Droplets, Users, Info } from 'lucide-react-native';
 import { BoardingHouse } from '../../types/tenant';
 import { Card } from '../common/Card';
 import { typography } from '../../styles/typography';
@@ -32,11 +32,30 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   } = boardingHouse;
 
   const formatPrice = (price: number) => {
+    if (!price || price <= 0) {
+      return '₱0.00';
+    }
+
     return `₱${price.toLocaleString()}`;
   };
 
+  const isRateConfirmed = ratePerMonth > 0;
+
   const { width: windowWidth } = useWindowDimensions();
   const isSmallScreen = windowWidth < 768;
+
+  const handleRateInfoPress = (event?: any) => {
+    if (event?.stopPropagation) {
+      event.stopPropagation();
+    }
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.alert('Rate has not been confirmed yet.');
+      return;
+    }
+
+    Alert.alert('Rate not confirmed', 'This rate has not been confirmed yet.');
+  };
 
   const renderRating = () => (
     <View>
@@ -87,7 +106,7 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
         Platform.OS === 'web' && styles.cardWeb,
       ]}>
         {/* Image Section */}
-        {images.length > 0 && (
+        {images.length > 0 ? (
           <View style={styles.imageWrapper}>
             <Image 
               source={{ uri: images[0] }} 
@@ -101,6 +120,15 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
               <Star size={14} color={colors.warning} fill={colors.warning} />
               <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
             </View>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.imageEmpty,
+              (isDesktop || isTablet) && styles.imageEmptyDesktop,
+            ]}
+          >
+            <Text style={styles.imageEmptyText}>No photos added</Text>
           </View>
         )}
         
@@ -123,12 +151,24 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
             </Text>
           </View>
 
-          <View style={[styles.bedsAndPrice,
-            { flexDirection: isSmallScreen ? 'column' : 'row', alignItems: isSmallScreen ? 'flex-start' : 'center' }
+          <View style={[styles.bedsAndPrice
           ]}>
-            <Text style={[typography.textStyles.h4, styles.price]}>
-              {formatPrice(ratePerMonth)}/month
-            </Text>
+            <View style={styles.priceRow}>
+              <Text style={[typography.textStyles.h4, styles.price]}>
+                {formatPrice(ratePerMonth)}/month
+              </Text>
+              {!isRateConfirmed && (
+                <TouchableOpacity
+                  style={styles.rateInfoButton}
+                  onPress={handleRateInfoPress}
+                  {...(Platform.OS === 'web'
+                    ? { title: 'Rate has not been confirmed yet.' }
+                    : {})}
+                >
+                  <Info size={14} color={colors.gray[500]} />
+                </TouchableOpacity>
+              )}
+            </View>
 
             <View style={styles.bedsContainer}>
               <Bed size={16} color={colors.primary} />
@@ -151,7 +191,6 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
 const styles = StyleSheet.create({
   cardWrapper: {
     width: '95%',
-    marginBottom: 16,
   },
   cardWrapperDesktop: {
     marginBottom: 0,
@@ -178,6 +217,21 @@ const styles = StyleSheet.create({
   },
   imageDesktop: {
     height: 220,
+  },
+  imageEmpty: {
+    height: 170,
+    borderRadius: 0,
+    backgroundColor: colors.gray[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageEmptyDesktop: {
+    height: 220,
+  },
+  imageEmptyText: {
+    color: colors.gray[500],
+    fontSize: 13,
+    fontFamily: 'Figtree_500Medium',
   },
   ratingBadge: {
     position: 'absolute',
@@ -224,10 +278,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bedsAndPrice: {
-    // flexDirection: 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 8
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rateInfoButton: {
+    padding: 4,
+    borderRadius: 999,
   },
   bedsContainer: {
     flexDirection: 'row',
