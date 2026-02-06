@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal, useWindowDimensions, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3, House, Check } from 'lucide-react-native';
@@ -11,7 +11,7 @@ import { useFavorites } from '../../../context/FavoritesContext';
 import { useAuth } from '../../../hooks/useAuth';
 import { useGuestTracking } from '../../../context/GuestTrackingContext';
 import { useUserType } from '../../../context/UserTypeContext';
-import { canAccessFeature, FeatureType, GUEST_LIMITS, BETA_TESTING_MODE } from '../../../utils/guestAccess';
+import { canAccessFeature, FeatureType, BETA_TESTING_MODE } from '../../../utils/guestAccess';
 import { useAppRating } from '../../../context/AppRatingContext';
 
 type BoardingHouseDetailRouteProp = RouteProp<{
@@ -32,6 +32,14 @@ export const BoardingHouseDetailScreen: React.FC = () => {
   const [currentFeature, setCurrentFeature] = React.useState<FeatureType>('save_favorites');
   const { width: windowWidth } = useWindowDimensions();
   const isSmallScreen = windowWidth < 768;
+
+  const formatCurrency = (value?: number) => {
+    if (!value || value <= 0) {
+      return '₱0.00';
+    }
+
+    return `₱${value.toLocaleString()}`;
+  };
 
   // Track property view for guests (disabled during beta testing) and rating system
   React.useEffect(() => {
@@ -94,6 +102,30 @@ export const BoardingHouseDetailScreen: React.FC = () => {
     );
   };
 
+  const handleCallOwner = async () => {
+    if (!canAccessFeature('contact_owner', isAuthenticated)) {
+      showAuthPrompt('contact_owner');
+      return;
+    }
+
+    const phone = boardingHouse.owner?.phone?.trim();
+
+    if (!phone) {
+      Alert.alert('No phone number', 'No contact number is available for this boarding house.');
+      return;
+    }
+
+    const telUrl = `tel:${phone}`;
+    const canOpen = await Linking.canOpenURL(telUrl);
+
+    if (!canOpen) {
+      Alert.alert('Unable to call', 'Your device cannot place calls from this app.');
+      return;
+    }
+
+    Linking.openURL(telUrl);
+  };
+
   const handleLike = () => {
     if (!canAccessFeature('save_favorites', isAuthenticated)) {
       showAuthPrompt('save_favorites');
@@ -151,57 +183,22 @@ export const BoardingHouseDetailScreen: React.FC = () => {
     clearUserType();
   };
 
-  // Mock reviews data - in a real app, this would come from the boardingHouse object
-  const allReviews = [
-    {
-      id: 1,
-      reviewer: { name: 'Maria Santos', initials: 'MJ' },
-      rating: 5,
-      date: '2 weeks ago',
-      text: 'Great place to stay! The room is clean and comfortable. The owner is very accommodating and responsive. Location is perfect for students, just a few minutes walk to the university.'
-    },
-    {
-      id: 2,
-      reviewer: { name: 'John Cruz', initials: 'JC' },
-      rating: 4,
-      date: '1 month ago',
-      text: 'Good value for money. WiFi is stable and the common areas are well-maintained. The only minor issue is the limited parking space, but overall satisfied with my stay.'
-    },
-    {
-      id: 3,
-      reviewer: { name: 'Anna Reyes', initials: 'AS' },
-      rating: 5,
-      date: '2 months ago',
-      text: 'Excellent boarding house! Very clean, safe, and the facilities are modern. The owner is friendly and helpful. Highly recommend for students and young professionals.'
-    },
-    // Additional reviews that guests won't see
-    {
-      id: 4,
-      reviewer: { name: 'Carlos Rivera', initials: 'CR' },
-      rating: 4,
-      date: '3 months ago',
-      text: 'Nice place with good amenities. The internet is fast and the location is convenient. Would recommend to fellow students.'
-    },
-    {
-      id: 5,
-      reviewer: { name: 'Lisa Garcia', initials: 'LG' },
-      rating: 5,
-      date: '4 months ago',
-      text: 'One of the best boarding houses in the area. Clean, safe, and well-managed. The owner is very responsive to any concerns.'
-    }
-  ];
-
-  // Limit reviews for guest users
-  const displayedReviews = isAuthenticated 
-    ? allReviews 
-    : allReviews.slice(0, GUEST_LIMITS.MAX_REVIEWS_VIEW);
+  const displayedReviews: Array<{
+    id: number;
+    reviewer: { name: string; initials: string };
+    rating: number;
+    date: string;
+    text: string;
+  }> = [];
 
   const gridImages = Array.from({ length: 2 }, (_, index) => boardingHouse.images?.[index] ?? null);
+  const hasImages = (boardingHouse.images ?? []).some((image) => Boolean(image));
 
   return (
-    <SafeAreaView style={[styles.container, {
-      width: isSmallScreen ? '95%' : '70%'
-    }]} edges={['top']}>
+    <View style={styles.screen}>
+      <SafeAreaView style={[styles.container, {
+        width: isSmallScreen ? '95%' : '70%'
+      }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -212,28 +209,34 @@ export const BoardingHouseDetailScreen: React.FC = () => {
         <TouchableOpacity style={styles.likeButton} onPress={handleLike}>
           <Heart 
             size={24} 
-            color={colors.white} 
+            color={colors.primary} 
             fill={isFavorite(boardingHouse.id) ? colors.white : 'transparent'}
           />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.imageGrid}>
-          {gridImages.map((uri, index) => (
-            <View key={`grid-${index}`} style={styles.imageCell}>
-              {uri ? (
-                <Image source={{ uri }} style={styles.imageFill} />
-              ) : (
-                <View style={styles.imagePlaceholder} />
-              )}
+        {hasImages ? (
+          <View style={styles.imageGrid}>
+            {gridImages.map((uri, index) => (
+              <View key={`grid-${index}`} style={styles.imageCell}>
+                {uri ? (
+                  <Image source={{ uri }} style={styles.imageFill} />
+                ) : (
+                  <View style={styles.imagePlaceholder} />
+                )}
+              </View>
+            ))}
+            <View style={styles.ratingBadge}>
+              <Star size={16} color="#FFD700" fill="#FFD700" />
+              <Text style={styles.ratingText}>{boardingHouse.rating}</Text>
             </View>
-          ))}
-          <View style={styles.ratingBadge}>
-            <Star size={16} color="#FFD700" fill="#FFD700" />
-            <Text style={styles.ratingText}>{boardingHouse.rating}</Text>
           </View>
-        </View>
+        ) : (
+          <View style={styles.imageEmpty}>
+            <Text style={styles.imageEmptyText}>No photos added</Text>
+          </View>
+        )}
 
         <View style={styles.amenitiesChipSection}>
           <ScrollView
@@ -266,105 +269,135 @@ export const BoardingHouseDetailScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Room Types */}
-        {boardingHouse.roomTypes && boardingHouse.roomTypes.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Available Room Types</Text>
-            <View style={styles.roomTypesContainer}>
-              {boardingHouse.roomTypes.map((roomType, index) => (
-                <View key={index} style={[styles.roomTypeCard, 
-                  {
-                    width: isSmallScreen ? '48%' : '30%'
-                  }
-                ]}>
-                  <View style={styles.roomTypeHeader}>
-                    <View style={styles.roomTypeIconContainer}>
-                      <Users size={20} color={colors.primary} />
-                      <Text style={[typography.textStyles.h4, styles.roomTypeName]}>
-                        {roomType.type.replace('-', ' ').toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={[typography.textStyles.h3, styles.roomTypePrice]}>
-                      ₱{roomType.pricePerMonth.toLocaleString()}
-                    </Text>
-                  </View>
-                  <View style={styles.roomTypeInfo}>
-                    <Text style={[typography.textStyles.body, styles.roomTypeAvailability]}>
-                      {roomType.available} bed{roomType.available !== 1 ? 's' : ''} available
-                    </Text>
-                    <Text style={[typography.textStyles.bodySmall, styles.roomTypePeriod]}>
-                      per month
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.section}>
-            <View style={styles.sectionTitleWithInfo}>
-              <Text style={[typography.textStyles.h4]}>Room Information</Text>
-              <TouchableOpacity 
-                style={styles.infoButton}
-                onPress={() => setRoomInfoModalVisible(true)}
+        <View style={[styles.roomPaymentRow, isSmallScreen && styles.roomPaymentColumn]}>
+          {/* Room Types */}
+          {boardingHouse.roomTypes && boardingHouse.roomTypes.length > 0 ? (
+            <View
+              style={[
+                styles.section,
+                styles.roomPaymentSection,
+                !isSmallScreen && styles.roomPaymentSectionWide,
+              ]}
+            >
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Available Room Types</Text>
+                <Text style={styles.sectionSubtitle}>Swipe to see all</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.roomTypeScroll}
               >
-                <Info size={15} color={colors.primary} />
-              </TouchableOpacity>
+                {boardingHouse.roomTypes.map((roomType, index) => (
+                  <View key={index} style={styles.roomTypeTile}>
+                    <View style={styles.roomTypeTileHeader}>
+                      <View style={styles.roomTypeBadge}>
+                        <Users size={14} color={colors.primary} />
+                        <Text style={styles.roomTypeBadgeText}>
+                          {roomType.type.replace('-', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.roomTypePriceBlock}>
+                        <Text style={styles.roomTypePriceValue}>
+                          {formatCurrency(roomType.pricePerMonth)}
+                        </Text>
+                        <Text style={styles.roomTypePriceUnit}>/month</Text>
+                      </View>
+                    </View>
+                    <View style={styles.roomTypeTileBody}>
+                      <View style={styles.roomTypeMetric}>
+                        <Text style={styles.roomTypeMetricLabel}>Availability</Text>
+                        <Text style={styles.roomTypeMetricValue}>
+                          {roomType.available} bed{roomType.available !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                      <View style={styles.roomTypeMetricDivider} />
+                      <View style={styles.roomTypeMetric}>
+                        <Text style={styles.roomTypeMetricLabel}>Deposit</Text>
+                        <Text style={styles.roomTypeMetricValue}>1 month</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
             </View>
-            <View style={styles.roomTypeCard}>
-              <View style={styles.roomTypeHeader}>
-                <View style={styles.roomTypeIconContainer}>
-                  <Users size={14} color={colors.primary} />
-                  <Text style={[typography.textStyles.h6, styles.roomTypeName]}>
-                    STANDARD ROOM (4-Person)
+          ) : (
+            <View
+              style={[
+                styles.section,
+                styles.roomPaymentSection,
+                !isSmallScreen && styles.roomPaymentSectionWide,
+              ]}
+            >
+              <View style={styles.sectionTitleWithInfo}>
+                <Text style={[typography.textStyles.h4]}>Room Information</Text>
+                <TouchableOpacity 
+                  style={styles.infoButton}
+                  onPress={() => setRoomInfoModalVisible(true)}
+                >
+                  <Info size={15} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.roomTypeCard}>
+                <View style={styles.roomTypeHeader}>
+                  <View style={styles.roomTypeIconContainer}>
+                    <Users size={14} color={colors.primary} />
+                    <Text style={[typography.textStyles.h6, styles.roomTypeName]}>
+                      STANDARD ROOM (4-Person)
+                    </Text>
+                  </View>
+                  <Text style={[typography.textStyles.h3, styles.roomTypePrice]}>
+                    {formatCurrency(boardingHouse.ratePerMonth)}
                   </Text>
                 </View>
-                <Text style={[typography.textStyles.h3, styles.roomTypePrice]}>
-                  ₱{boardingHouse.ratePerMonth.toLocaleString()}
-                </Text>
-              </View>
-              <View style={styles.roomTypeInfo}>
-                <Text style={[typography.textStyles.body, styles.roomTypeAvailability]}>
-                  {boardingHouse.availableBeds} bed{boardingHouse.availableBeds !== 1 ? 's' : ''} available
-                </Text>
-                <Text style={[typography.textStyles.bodySmall, styles.roomTypePeriod]}>
-                  per month
-                </Text>
+                <View style={styles.roomTypeInfo}>
+                  <Text style={[typography.textStyles.body, styles.roomTypeAvailability]}>
+                    {boardingHouse.availableBeds} bed{boardingHouse.availableBeds !== 1 ? 's' : ''} available
+                  </Text>
+                  <Text style={[typography.textStyles.bodySmall, styles.roomTypePeriod]}>
+                    per month
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Payment Terms */}
-        <View style={styles.section}>
-          <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Payment Terms</Text>
-          <View style={styles.paymentGrid}>
-            <View style={styles.paymentItem}>
-              <Text style={styles.paymentLabel}>Advance Payment</Text>
-              <Text style={styles.paymentValue}>{boardingHouse.paymentTerms.advancePayment} month(s)</Text>
-            </View>
-            <View style={styles.paymentItem}>
-              <Text style={styles.paymentLabel}>Deposit</Text>
-              <Text style={styles.paymentValue}>₱{boardingHouse.paymentTerms.deposit.toLocaleString()}</Text>
-            </View>
-            <View style={styles.paymentItem}>
-              <Text style={styles.paymentLabel}>Electricity</Text>
-              <Text style={styles.paymentValue}>
-                {boardingHouse.paymentTerms.electricityIncluded ? 'Included' : 'Separate'}
-              </Text>
-            </View>
-            <View style={styles.paymentItem}>
-              <Text style={styles.paymentLabel}>Water</Text>
-              <Text style={styles.paymentValue}>
-                {boardingHouse.paymentTerms.waterIncluded ? 'Included' : 'Separate'}
-              </Text>
+          <View
+            style={[
+              styles.section,
+              styles.roomPaymentSection,
+              !isSmallScreen && styles.roomPaymentSectionWide,
+            ]}
+          >
+            <Text style={[typography.textStyles.h4, styles.sectionTitle, {marginBottom: 16}]}>Payment Terms</Text>
+            <View style={styles.paymentGrid}>
+              <View style={styles.paymentItem}>
+                <Text style={styles.paymentLabel}>Advance Payment</Text>
+                <Text style={styles.paymentValue}>{boardingHouse.paymentTerms.advancePayment} month(s)</Text>
+              </View>
+              <View style={styles.paymentItem}>
+                <Text style={styles.paymentLabel}>Deposit</Text>
+                <Text style={styles.paymentValue}>₱{boardingHouse.paymentTerms.deposit.toLocaleString()}</Text>
+              </View>
+              <View style={styles.paymentItem}>
+                <Text style={styles.paymentLabel}>Electricity</Text>
+                <Text style={styles.paymentValue}>
+                  {boardingHouse.paymentTerms.electricityIncluded ? 'Included' : 'Separate'}
+                </Text>
+              </View>
+              <View style={styles.paymentItem}>
+                <Text style={styles.paymentLabel}>Water</Text>
+                <Text style={styles.paymentValue}>
+                  {boardingHouse.paymentTerms.waterIncluded ? 'Included' : 'Separate'}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
 
         {/* Property Owner */}
         <View style={styles.section}>
-          <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Property Owner</Text>
+          <Text style={[typography.textStyles.h4, styles.sectionTitle, {marginBottom: 16}]}>Property Owner</Text>
           <View style={styles.ownerCard}>
             <View style={styles.ownerInfo}>
               <View style={styles.ownerAvatar}>
@@ -393,7 +426,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
             <View style={styles.ownerActions}>
               <TouchableOpacity 
                 style={styles.ownerActionButton} 
-                onPress={() => Alert.alert('Call Owner', 'Calling feature coming soon!')}
+                onPress={handleCallOwner}
               >
                 <Phone size={20} color={colors.primary} />
                 <Text style={styles.ownerActionButtonText}>Call</Text>
@@ -412,7 +445,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
         {/* Reviews Section */}
         <View style={styles.section}>
           <View style={styles.reviewsHeader}>
-            <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Reviews</Text>
+            <Text style={[typography.textStyles.h4, styles.sectionTitle, {marginBottom: 16}]}>Reviews</Text>
             <View style={styles.reviewsSummary}>
               <Star size={16} color="#FFD700" fill="#FFD700" />
               <Text style={styles.reviewsRating}>{boardingHouse.rating}</Text>
@@ -421,61 +454,52 @@ export const BoardingHouseDetailScreen: React.FC = () => {
           </View>
           
           <View style={styles.reviewsList}>
-            {displayedReviews.map((review) => (
-              <View key={review.id} style={styles.reviewItem}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewerAvatar}>
-                    <Text style={styles.reviewerInitials}>{review.reviewer.initials}</Text>
-                  </View>
-                  <View style={styles.reviewerInfo}>
-                    <Text style={styles.reviewerName}>{review.reviewer.name}</Text>
-                    <View style={styles.reviewRating}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star 
-                          key={star} 
-                          size={12} 
-                          color={star <= review.rating ? "#FFD700" : "#E5E5E5"} 
-                          fill={star <= review.rating ? "#FFD700" : "#E5E5E5"} 
-                        />
-                      ))}
+            {displayedReviews.length === 0 ? (
+              <Text style={styles.noReviewsText}>No reviews yet.</Text>
+            ) : (
+              displayedReviews.map((review) => (
+                <View key={review.id} style={styles.reviewItem}>
+                  <View style={styles.reviewHeader}>
+                    <View style={styles.reviewerAvatar}>
+                      <Text style={styles.reviewerInitials}>{review.reviewer.initials}</Text>
                     </View>
+                    <View style={styles.reviewerInfo}>
+                      <Text style={styles.reviewerName}>{review.reviewer.name}</Text>
+                      <View style={styles.reviewRating}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            size={12} 
+                            color={star <= review.rating ? "#FFD700" : "#E5E5E5"} 
+                            fill={star <= review.rating ? "#FFD700" : "#E5E5E5"} 
+                          />
+                        ))}
+                      </View>
+                    </View>
+                    <Text style={styles.reviewDate}>{review.date}</Text>
                   </View>
-                  <Text style={styles.reviewDate}>{review.date}</Text>
+                  <Text style={styles.reviewText}>{review.text}</Text>
                 </View>
-                <Text style={styles.reviewText}>{review.text}</Text>
-              </View>
-            ))}
-            
-            {/* Guest limitation notice */}
-            {!isAuthenticated && allReviews.length > GUEST_LIMITS.MAX_REVIEWS_VIEW && (
-              <TouchableOpacity 
-                style={styles.moreReviewsButton} 
-                onPress={() => showAuthPrompt('read_reviews')}
-              >
-                <Text style={styles.moreReviewsText}>
-                  +{allReviews.length - GUEST_LIMITS.MAX_REVIEWS_VIEW} more reviews
-                </Text>
-                <Text style={styles.moreReviewsSubtext}>Sign up to read all reviews</Text>
-              </TouchableOpacity>
+              ))
             )}
           </View>
           
-          {/* Write Review Button */}
           <TouchableOpacity style={styles.writeReviewButton} onPress={handleWriteReview}>
             <Edit3 size={20} color={colors.primary} />
             <Text style={styles.writeReviewText}>Write a Review</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom padding for book button */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      </SafeAreaView>
 
       {/* Fixed Book Now Button */}
       <SafeAreaView edges={['bottom']} style={styles.bookingContainer}>
         <View style={styles.bookingContent}>
           <View style={styles.priceContainer}>
-            <Text style={styles.bookingPrice}>₱{boardingHouse.ratePerMonth.toLocaleString()}</Text>
+            <Text style={styles.bookingPrice}>{formatCurrency(boardingHouse.ratePerMonth)}</Text>
             <Text style={styles.bookingPeriod}>/month</Text>
           </View>
           <Button
@@ -560,24 +584,28 @@ export const BoardingHouseDetailScreen: React.FC = () => {
         onSignUp={handleAuthPromptSignUp}
         onLogin={handleAuthPromptLogin}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
     margin: 'auto',
-    marginTop: 20
+    marginTop: 5
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 15,
+    marginBottom: 5
   },
   backButton: {
-    padding: 8,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center', 
     gap: 10
@@ -622,7 +650,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: 6,
-    paddingTop: 8,
+    paddingTop: 5,
   },
   imageCell: {
     width: '49%',
@@ -639,6 +667,19 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     flex: 1,
     backgroundColor: colors.gray[100],
+  },
+  imageEmpty: {
+    borderRadius: 12,
+    backgroundColor: colors.gray[100],
+    paddingVertical: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 5,
+  },
+  imageEmptyText: {
+    color: colors.gray[500],
+    fontSize: 14,
+    fontFamily: 'Figtree_500Medium',
   },
   ratingBadge: {
     position: 'absolute',
@@ -681,12 +722,34 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
   },
   sectionTitle: {
-    color: colors.gray[900],
+  },
+  roomPaymentRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  roomPaymentColumn: {
+    flexDirection: 'column',
+  },
+  roomPaymentSection: {
+    width: '100%',
+  },
+  roomPaymentSectionWide: {
+    flex: 1,
+    width: 'auto',
+    minWidth: 0,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  sectionSubtitle: {
+    color: colors.gray[500],
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
   },
   description: {
     color: colors.gray[700],
@@ -760,6 +823,11 @@ const styles = StyleSheet.create({
     height: 100,
   },
   bookingContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.gray[200],
@@ -800,13 +868,8 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     fontStyle: 'italic',
   },
-  roomTypesContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
   roomTypeCard: {
     backgroundColor: colors.gray[50],
-    width: '48%',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -841,6 +904,85 @@ const styles = StyleSheet.create({
   },
   roomTypePeriod: {
     color: colors.gray[500],
+  },
+  roomTypeScroll: {
+    gap: 12,
+    paddingBottom: 4,
+  },
+  roomTypeTile: {
+    width: 240,
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  roomTypeTileHeader: {
+    gap: 10,
+  },
+  roomTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: colors.primary + '12',
+  },
+  roomTypeBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.primary,
+  },
+  roomTypePriceBlock: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  roomTypePriceValue: {
+    fontSize: 20,
+    fontFamily: 'Figtree_700Bold',
+    color: colors.gray[900],
+  },
+  roomTypePriceUnit: {
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
+    color: colors.gray[500],
+  },
+  roomTypeTileBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray[200],
+  },
+  roomTypeMetric: {
+    flex: 1,
+  },
+  roomTypeMetricLabel: {
+    fontSize: 11,
+    fontFamily: 'Figtree_500Medium',
+    color: colors.gray[500],
+    marginBottom: 4,
+  },
+  roomTypeMetricValue: {
+    fontSize: 13,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.gray[800],
+  },
+  roomTypeMetricDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.gray[200],
+    marginHorizontal: 10,
   },
   ownerCard: {
     backgroundColor: colors.gray[50],
@@ -988,6 +1130,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.gray[700],
     lineHeight: 20,
+  },
+  noReviewsText: {
+    fontSize: 14,
+    color: colors.gray[500],
+    fontFamily: 'Figtree_400Regular',
+    textAlign: 'center',
+    paddingVertical: 12,
   },
   sectionTitleWithInfo: {
     flexDirection: 'row',

@@ -68,16 +68,6 @@ export const SearchFilterChips: React.FC<SearchFilterChipsProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.row}
       >
-        <TouchableOpacity
-          style={[styles.chip, selectedSchool === '' && styles.chipActive]}
-          onPress={() => handleSelectSchool('')}
-        >
-          <Text
-            style={[styles.chipText, selectedSchool === '' && styles.chipTextActive]}
-          >
-            All Locations
-          </Text>
-        </TouchableOpacity>
         {schools.map((school) => (
           <TouchableOpacity
             key={school.id}
@@ -137,7 +127,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 999,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.gray[300],
     backgroundColor: colors.white,

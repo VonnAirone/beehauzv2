@@ -1,8 +1,9 @@
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface WelcomeContextType {
   isWelcomeCompleted: boolean;
-  completeWelcome: () => void;
+  completeWelcome: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -14,13 +15,34 @@ interface WelcomeProviderProps {
 
 export const WelcomeProvider: React.FC<WelcomeProviderProps> = ({ children }) => {
   const [isWelcomeCompleted, setIsWelcomeCompleted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // No loading needed since we always show welcome
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Remove useEffect and checkWelcomeStatus - we always want to show welcome screen
+  const WELCOME_STORAGE_KEY = '@beehauz_welcome_completed';
 
-  const completeWelcome = () => {
-    // No need to save to AsyncStorage since we want to show every time
-    setIsWelcomeCompleted(true);
+  useEffect(() => {
+    checkWelcomeStatus();
+  }, []);
+
+  const checkWelcomeStatus = async () => {
+    try {
+      setIsLoading(true);
+      const completed = await AsyncStorage.getItem(WELCOME_STORAGE_KEY);
+      setIsWelcomeCompleted(completed === 'true');
+    } catch (error) {
+      console.error('Error checking welcome status:', error);
+      setIsWelcomeCompleted(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const completeWelcome = async () => {
+    try {
+      await AsyncStorage.setItem(WELCOME_STORAGE_KEY, 'true');
+      setIsWelcomeCompleted(true);
+    } catch (error) {
+      console.error('Error completing welcome:', error);
+    }
   };
 
   return (

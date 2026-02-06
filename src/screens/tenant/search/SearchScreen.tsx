@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Image, Platform, ImageStyle, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Image, Platform, ImageStyle, useWindowDimensions, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -115,14 +115,35 @@ export const SearchScreen: React.FC = () => {
     return searchText !== '' || priceRange.min !== 0 || priceRange.max !== 10000 || selectedSchool !== '';
   };
 
+  const activeFilterCount = () => {
+    let count = 0;
+    if (selectedSchool !== '') count += 1;
+    if (priceRange.min !== 0 || priceRange.max !== 10000) count += 1;
+    return count;
+  };
+
   const clearAllFilters = () => {
     setSearchText('');
     setPriceRange({ min: 0, max: 10000 });
     setSelectedSchool('');
   };
 
+  const handleSelectSchool = (value: string) => {
+    const nextValue = value === selectedSchool ? '' : value;
+    setSelectedSchool(nextValue);
+  };
+
+  const handleSelectPriceRange = (range: { min: number; max: number }) => {
+    const isSameRange = priceRange.min === range.min && priceRange.max === range.max;
+    setPriceRange(isSameRange ? { min: 0, max: 10000 } : range);
+  };
+
+  const filteredProperties = filterProperties(sampleBoardingHouses);
+  const shouldShowResultsCount =
+    (searchText.trim() !== '' || activeFilterCount() > 0) && filteredProperties.length > 0;
+
   const renderPropertiesSection = () => {
-    const allFilteredProperties = filterProperties(sampleBoardingHouses);
+    const allFilteredProperties = filteredProperties;
 
     const displayedProperties = isAuthenticated || hasReachedViewLimit || BETA_TESTING_MODE
       ? allFilteredProperties 
@@ -144,7 +165,7 @@ export const SearchScreen: React.FC = () => {
           <View style={styles.webGrid}>
             {displayedProperties.map((item) => (
               <View key={item.id} style={[styles.webCardWrapper,
-                { minWidth: isSmallScreen ? '50%' : '25%'}
+                { minWidth: isSmallScreen ? '100%' : '25%'}
               ]}>
                 <BoardingHouseCard
                   boardingHouse={item}
@@ -225,123 +246,9 @@ export const SearchScreen: React.FC = () => {
   );
 
 
-  const renderFilters = () => (
-    <Modal
-      visible={showFilters}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowFilters(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <ScrollView style={styles.filterModal} showsVerticalScrollIndicator={false}>
-          <View style={styles.filterHeader}>
-            <Text style={[typography.textStyles.h3, styles.filterTitle]}>Filters</Text>
-            <TouchableOpacity
-              onPress={() => setShowFilters(false)}
-              style={styles.closeButton}
-            >
-              <X size={24} color={colors.gray[600]} />
-            </TouchableOpacity>
-          </View>
-
-          {/* School/Location Filter */}
-          <View style={styles.filterSection}>
-            <Text style={[typography.textStyles.h4, styles.filterSectionTitle]}>Near School/University</Text>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.schoolOptionsContainer}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.schoolOptionChip,
-                  styles.allLocationsChip,
-                  selectedSchool === '' && styles.selectedSchoolOptionChip
-                ]}
-                onPress={() => setSelectedSchool('')}
-              >
-                <Text style={[
-                  styles.schoolOptionChipText,
-                  selectedSchool === '' && styles.selectedSchoolOptionChipText
-                ]}>
-                  All Locations
-                </Text>
-              </TouchableOpacity>
-              {POPULAR_SCHOOLS.map((school) => (
-                <TouchableOpacity
-                  key={school.id}
-                  style={[
-                    styles.schoolOptionChip,
-                    selectedSchool === school.shortName && styles.selectedSchoolOptionChip
-                  ]}
-                  onPress={() => setSelectedSchool(school.shortName)}
-                >
-                  <Text style={[
-                    styles.schoolOptionChipText,
-                    selectedSchool === school.shortName && styles.selectedSchoolOptionChipText
-                  ]}>
-                    {school.shortName}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {selectedSchool !== '' && (
-              <Text style={styles.selectedSchoolInfo}>
-                {POPULAR_SCHOOLS.find(s => s.shortName === selectedSchool)?.name} - {POPULAR_SCHOOLS.find(s => s.shortName === selectedSchool)?.location}
-              </Text>
-            )}
-          </View>
-
-          {/* Price Range Filter */}
-          <View style={styles.filterSection}>
-            <Text style={[typography.textStyles.h4, styles.filterSectionTitle]}>Price Range</Text>
-            <View style={styles.priceOptions}>
-              {DEFAULT_PRICE_RANGES.map((range, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.priceOption,
-                    priceRange.min === range.min && priceRange.max === range.max && styles.selectedPriceOption
-                  ]}
-                  onPress={() => setPriceRange({ min: range.min, max: range.max })}
-                >
-                  <Text style={[
-                    styles.priceOptionText,
-                    priceRange.min === range.min && priceRange.max === range.max && styles.selectedPriceOptionText
-                  ]}>
-                    {range.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.filterActions}>
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => {
-                setPriceRange({ min: 0, max: 10000 });
-                setSelectedSchool('');
-              }}
-            >
-              <Text style={styles.clearButtonText}>Clear All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.applyButton}
-              onPress={() => setShowFilters(false)}
-            >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-
 
   return (
     <View style={styles.container}>
-      {renderFilters()}
       <ScrollView
         showsVerticalScrollIndicator={false}
         bounces={true}
@@ -373,28 +280,208 @@ export const SearchScreen: React.FC = () => {
               />
             </View>
 
-            <View style={styles.mapButton}>
-              <MapPin size={32} color={colors.white} />
-            </View>
+            {isSmallScreen ? (
+              <View style={styles.mapButton}>
+                <TouchableOpacity
+                  onPress={() => setShowFilters(true)}
+                  activeOpacity={0.7}
+                  style={styles.mobileFilterButton}
+                >
+                  <Filter size={24} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.mapButton}>
+                <MapPin size={32} color={colors.primary} />
+              </View>
+            )}
+
           </View>
 
-          <SearchFilterChips
-            initialSelectedSchool={selectedSchool}
-            initialPriceRange={priceRange}
-            schools={POPULAR_SCHOOLS}
-            onChange={({ selectedSchool: nextSchool, priceRange: nextRange }) => {
-              setSelectedSchool(nextSchool);
-              setPriceRange(nextRange);
-            }}
-            onMoreFilters={() => setShowFilters(true)}
-          />
+          <View style={styles.filterChipsRow}>
+            {!isSmallScreen ? (
+              <SearchFilterChips
+                initialSelectedSchool={selectedSchool}
+                initialPriceRange={priceRange}
+                schools={POPULAR_SCHOOLS}
+                onChange={({ selectedSchool: nextSchool, priceRange: nextRange }) => {
+                  setSelectedSchool(nextSchool);
+                  setPriceRange(nextRange);
+                }}
+                onMoreFilters={() => setShowFilters(true)}
+              />
+            ) : (
+              <View style={styles.mobileFilterSpacer} />
+            )}
+
+            <View style={styles.clearFilterContainer}>
+              {searchText.trim() !== '' || activeFilterCount() > 0 ? (
+                filteredProperties.length > 0 ? (
+                  <Text style={styles.resultsCountText}>
+                    ({filteredProperties.length}) results found
+                  </Text>
+                ) : (
+                  <Text style={styles.resultsCountText}>No Results Found</Text>
+                )
+              ) : null}
+
+              {activeFilterCount() > 0 && (
+                <TouchableOpacity
+                  onPress={clearAllFilters}
+                  activeOpacity={0.7}
+                  style={styles.activeFiltersBadge}
+                >
+                  <Text style={styles.activeFiltersText}>
+                    {activeFilterCount()} filter{activeFilterCount() > 1 ? 's' : ''} active ×
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+          </View>
         </View>
 
         
         <View style={styles.contentContainer}>
           {renderProperties()}
         </View>
+
+        <View style={styles.disclaimerContainer}>
+          <Text style={styles.disclaimerText}>
+            All listed properties are sourced from the official directory of accredited boarding houses for University of Antique students in Sibalom.
+          </Text>
+          <Text
+            style={styles.disclaimerLink}
+            onPress={() => Linking.openURL('https://www.facebook.com/profile.php?id=61580989200280')}
+          >
+            Visit the official page
+          </Text>
+        </View>
       </ScrollView>
+
+      <Modal
+        visible={showFilters}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowFilters(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowFilters(false)}
+          />
+          <View style={styles.filterModal}>
+            <View style={styles.filterHeader}>
+              <Text style={[typography.textStyles.h3, styles.filterTitle]}>Filters</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowFilters(false)}
+              >
+                <X size={20} color={colors.gray[700]} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Location</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.schoolOptionsContainer}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.schoolOptionChip,
+                    styles.allLocationsChip,
+                    selectedSchool === '' && styles.selectedSchoolOptionChip,
+                  ]}
+                  onPress={() => handleSelectSchool('')}
+                >
+                  <Text
+                    style={[
+                      styles.schoolOptionChipText,
+                      selectedSchool === '' && styles.selectedSchoolOptionChipText,
+                    ]}
+                  >
+                    All Locations
+                  </Text>
+                </TouchableOpacity>
+                {POPULAR_SCHOOLS.map((school) => (
+                  <TouchableOpacity
+                    key={school.id}
+                    style={[
+                      styles.schoolOptionChip,
+                      selectedSchool === school.shortName && styles.selectedSchoolOptionChip,
+                    ]}
+                    onPress={() => handleSelectSchool(school.shortName)}
+                  >
+                    <Text
+                      style={[
+                        styles.schoolOptionChipText,
+                        selectedSchool === school.shortName &&
+                          styles.selectedSchoolOptionChipText,
+                      ]}
+                    >
+                      {school.shortName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              {selectedSchool !== '' && (
+                <Text style={styles.selectedSchoolInfo}>
+                  Showing near {selectedSchool}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Price Range</Text>
+              <View style={styles.priceOptions}>
+                {DEFAULT_PRICE_RANGES.map((range, index) => {
+                  const isSelected =
+                    priceRange.min === range.min && priceRange.max === range.max;
+                  return (
+                    <TouchableOpacity
+                      key={`${range.label}-${index}`}
+                      style={[styles.priceOption, isSelected && styles.selectedPriceOption]}
+                      onPress={() =>
+                        handleSelectPriceRange({ min: range.min, max: range.max })
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.priceOptionText,
+                          isSelected && styles.selectedPriceOptionText,
+                        ]}
+                      >
+                        {range.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.filterActions}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => {
+                  clearAllFilters();
+                  setShowFilters(false);
+                }}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setShowFilters(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <ServiceSurveyModal
         visible={showSurveyModal}
@@ -421,9 +508,9 @@ export const SearchScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '95%',
+    width: '100%',
     margin: 'auto',
-    paddingTop: 30,
+    paddingTop: 10,
   },
   header: {
     paddingHorizontal: 20,
@@ -518,7 +605,7 @@ const styles = StyleSheet.create({
   },
   webCardWrapper: {
     width: '25%',
-    paddingBottom: 16
+    paddingBottom: 10
   },
   horizontalCardWrapper: {
     width: 280,
@@ -528,7 +615,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
     width: "100%",
     gap: 12,
     marginTop: 10,
@@ -541,7 +627,7 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     alignSelf: 'center',
     backgroundColor: colors.white,
-    borderRadius: 100,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.primary,
     paddingHorizontal: 16,
@@ -559,9 +645,10 @@ const styles = StyleSheet.create({
   mapButton: {
     flex: 1,
     maxWidth: 50,
-    backgroundColor: colors.primary,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.primary,
     color: colors.white,
-    borderRadius: 100,
     height: 48,
     padding: 12,
     alignItems: 'center',
@@ -581,25 +668,50 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     paddingVertical: 0, // Remove default padding for better alignment
   },
-  filterButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
   contentContainer: {
-    paddingTop: 20,
     paddingHorizontal: 5,
+  },
+  filterChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    width: '100%',
+  },
+  mobileFilterSpacer: {
+    flexGrow: 1,
+  },
+  clearFilterContainer: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    width: '100%',
+  },
+  mobileFilterButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeFiltersBadge: {
+    width: 'auto',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  activeFiltersText: {
+    fontSize: 12,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.primary,
+  },
+  resultsCountText: {
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
+    color: colors.gray[600],
   },
   sectionTitle: {
     color: colors.primary,
@@ -617,6 +729,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    flex: 1,
   },
   filterModal: {
     backgroundColor: colors.white,
@@ -848,5 +963,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Figtree_400Regular',
     color: colors.gray[500],
+  },
+  disclaimerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    paddingTop: 8,
+    alignItems: 'center',
+  },
+  disclaimerText: {
+    fontSize: 12,
+    fontFamily: 'Figtree_400Regular',
+    color: colors.gray[600],
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 6,
+  },
+  disclaimerLink: {
+    fontSize: 12,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.primary,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });
