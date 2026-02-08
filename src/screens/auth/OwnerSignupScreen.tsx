@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Eye, EyeOff, X } from 'lucide-react-native';
-import { Button, Input } from '../../components/common';
+import { Eye, EyeOff } from 'lucide-react-native';
+import { Input } from '../../components/common';
 import { useAuthContext } from '../../context/AuthContext';
 import { useUserType } from '../../context/UserTypeContext';
 import { typography } from '../../styles/typography';
@@ -22,7 +22,7 @@ import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 import { AuthStackParamList } from '../../navigation/types';
 
-type NavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
+type NavigationProp = StackNavigationProp<AuthStackParamList, 'OwnerSignup'>;
 
 interface SignupFormData {
   fullName: string;
@@ -38,18 +38,18 @@ interface ValidationErrors {
   confirmPassword?: string;
 }
 
-export const SignupScreen: React.FC = () => {
+export const OwnerSignupScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { register } = useAuthContext();
   const { setUserType } = useUserType();
-  
+
   const [formData, setFormData] = useState<SignupFormData>({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
-  
+
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -61,35 +61,30 @@ export const SignupScreen: React.FC = () => {
   };
 
   const validatePassword = (password: string): boolean => {
-    // At least 6 characters for consistency with Supabase and LoginScreen
     return password.length >= 6;
   };
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
-    // Full Name validation
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = 'Full name must be at least 2 characters';
     }
 
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!validateEmail(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (!validatePassword(formData.password)) {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
-    // Confirm Password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
@@ -105,8 +100,7 @@ export const SignupScreen: React.FC = () => {
       ...prev,
       [field]: value,
     }));
-    
-    // Clear error when user starts typing
+
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -119,23 +113,21 @@ export const SignupScreen: React.FC = () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
-    
+
     try {
-      // Default to 'tenant' since most users will be tenants (BH owners have fixed credentials)
       const result = await register({
         fullName: formData.fullName,
         email: formData.email,
         password: formData.password,
-        userType: 'tenant',
+        userType: 'owner',
       });
-      
+
       if (result.success) {
         Alert.alert(
           'Welcome!',
-          `Account created successfully! You can now explore all features.`,
+          'Owner account created successfully! You can now list your properties.',
           [{ text: 'OK' }]
         );
-        // Navigation will be handled automatically by AppNavigator
       } else {
         Alert.alert(
           'Signup Failed',
@@ -143,7 +135,6 @@ export const SignupScreen: React.FC = () => {
           [{ text: 'OK' }]
         );
       }
-      
     } catch (error) {
       console.error('Signup error:', error);
       Alert.alert(
@@ -160,12 +151,7 @@ export const SignupScreen: React.FC = () => {
     navigation.navigate('Login');
   };
 
-  const handleOwnerSignup = () => {
-    navigation.navigate('OwnerSignup');
-  };
-
   const handleClose = () => {
-    // Set user type back to tenant to return to main app without authentication
     setUserType('tenant');
   };
 
@@ -181,13 +167,12 @@ export const SignupScreen: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>
-            
             <View style={styles.header}>
               <Text style={[typography.textStyles.h1, styles.title]}>
-                Create Account
+                Create Owner Account
               </Text>
               <Text style={[typography.textStyles.body, styles.subtitle]}>
-                Join Beehauz to save favorites and contact owners.
+                List your properties and manage bookings.
               </Text>
             </View>
 
@@ -263,9 +248,11 @@ export const SignupScreen: React.FC = () => {
 
             <View style={styles.actions}>
               <TouchableOpacity style={styles.createAccount} onPress={handleSignup}>
-                <Text style={{color: colors.white, fontSize: 16, fontWeight:'600'}}>{isLoading ? 'Creating Account...' : 'Create Account'}</Text>
+                <Text style={styles.primaryActionText}>
+                  {isLoading ? 'Creating Account...' : 'Create Owner Account'}
+                </Text>
               </TouchableOpacity>
-              
+
               {isLoading && (
                 <ActivityIndicator
                   size="small"
@@ -275,14 +262,7 @@ export const SignupScreen: React.FC = () => {
               )}
 
               <TouchableOpacity style={styles.signUpButton} onPress={handleLogin}>
-                <Text style={{color: colors.primary, fontSize: 16, fontWeight:'600'}}>Log in</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.ownerPrompt}>
-              <Text style={styles.ownerPromptText}>Are you a property owner?</Text>
-              <TouchableOpacity onPress={handleOwnerSignup}>
-                <Text style={styles.ownerPromptLink}>Create an owner account</Text>
+                <Text style={styles.secondaryActionText}>Log in</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -305,8 +285,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing[6], // 24px
-    paddingVertical: spacing[6], // 24px
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[6],
     alignItems: 'center',
   },
   card: {
@@ -315,7 +295,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 16,
     paddingHorizontal: 40,
-    paddingVertical: 40,
+    paddingVertical: spacing[6],
     borderWidth: 1,
     borderColor: colors.gray[200],
     shadowColor: '#000',
@@ -324,20 +304,13 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 3,
   },
-  closeButton: {
-    position: 'absolute',
-    top: spacing[4], // 16px
-    right: spacing[4], // 16px
-    padding: spacing[2], // 8px
-    zIndex: 1,
-  },
   header: {
     alignItems: 'center',
-    marginBottom: spacing[8], // 32px
+    marginBottom: spacing[8],
   },
   title: {
     color: colors.black,
-    marginBottom: spacing[3], // 12px
+    marginBottom: spacing[3],
   },
   subtitle: {
     color: colors.gray[600],
@@ -346,29 +319,14 @@ const styles = StyleSheet.create({
   },
   form: {
     flex: 1,
-    gap: spacing[4], // 24px
+    gap: spacing[4],
   },
   actions: {
-    marginTop: spacing[8], // 32px
-    gap: spacing[4], // 16px
-  },
-  signupButton: {
-    marginBottom: spacing[3], // 12px
+    marginTop: spacing[8],
+    gap: spacing[4],
   },
   loader: {
     alignSelf: 'center',
-  },
-  loginPrompt: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing[6], // 24px
-  },
-  loginText: {
-    color: colors.gray[600],
-    textAlign: 'center',
-  },
-  loginLink: {
-    color: colors.primary,
   },
   passwordToggle: {
     position: 'absolute',
@@ -377,38 +335,28 @@ const styles = StyleSheet.create({
     padding: 4,
     zIndex: 1,
   },
-  passwordToggleText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-    createAccount: {
+  createAccount: {
     alignItems: 'center',
     padding: 15,
     borderRadius: 10,
-    backgroundColor: colors.primary
+    backgroundColor: colors.primary,
   },
-    signUpButton: {
+  signUpButton: {
     alignItems: 'center',
     padding: 15,
     borderRadius: 10,
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: colors.primary,
-    color: colors.primary
   },
-    ownerPrompt: {
-      marginTop: spacing[6],
-      alignItems: 'center',
-      gap: 4,
-    },
-    ownerPromptText: {
-      color: colors.gray[600],
-      fontSize: 13,
-    },
-    ownerPromptLink: {
-      color: colors.primary,
-      fontSize: 14,
-      fontWeight: '600',
-    },
+  primaryActionText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryActionText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

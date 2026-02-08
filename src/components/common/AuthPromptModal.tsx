@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { User, Heart, MessageCircle, Calendar, Star, Map, Eye } from 'lucide-react-native';
+import { User, Heart, MessageCircle, Calendar, Star, Map, Eye, Bell } from 'lucide-react-native';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
@@ -23,6 +23,7 @@ const getFeatureIcon = (feature: FeatureType) => {
     case 'contact_owner':
       return <MessageCircle {...iconProps} />;
     case 'make_booking':
+    case 'access_bookings':
       return <Calendar {...iconProps} />;
     case 'write_review':
       return <Star {...iconProps} />;
@@ -32,6 +33,8 @@ const getFeatureIcon = (feature: FeatureType) => {
       return <Map {...iconProps} />;
     case 'view_all_properties':
       return <Eye {...iconProps} />;
+    case 'access_notifications':
+      return <Bell {...iconProps} />;
     default:
       return <User {...iconProps} />;
   }
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
   },
   signUpButtonText: {
     ...typography.textStyles.button,
-    ...typography.textStyles.bodySmall,
+    ...typography.textStyles.caption,
     color: colors.white,
   },
   loginButton: {
@@ -144,7 +147,7 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     ...typography.textStyles.body,
-    ...typography.textStyles.bodySmall,
+    ...typography.textStyles.caption,
     color: colors.primary,
   },
   closeButton: {

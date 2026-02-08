@@ -67,7 +67,7 @@ export const OwnerNavigator: React.FC = () => {
 
   const handleTabPress = (tabName: string) => {
     setActiveTab(tabName);
-    navigation.navigate(tabName);
+    navigation.navigate('Main', { screen: tabName });
   };
 
   return (

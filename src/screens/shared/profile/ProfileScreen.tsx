@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Heart, ChevronRight } from 'lucide-react-native';
@@ -18,6 +18,7 @@ export const ProfileScreen: React.FC = () => {
   const { userType, clearUserType, setUserType } = useUserType();
   const { user, logout, isAuthenticated } = useAuthContext();
   const { favorites } = useFavorites();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
   // Sync userType context with authenticated user's type
   useEffect(() => {
@@ -26,7 +27,30 @@ export const ProfileScreen: React.FC = () => {
     }
   }, [isAuthenticated, user?.userType, userType, setUserType]);
 
+  const runLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setUserType('tenant');
+      const parentNav = navigation.getParent();
+      if (parentNav) {
+        parentNav.navigate('Main', {
+          screen: 'TenantTabs',
+          params: { screen: 'Search' },
+        } as never);
+      }
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      runLogout();
+      return;
+    }
+
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -38,10 +62,7 @@ export const ProfileScreen: React.FC = () => {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: async () => {
-            clearUserType();
-            await logout();
-          },
+          onPress: runLogout,
         },
       ]
     );
@@ -253,9 +274,12 @@ export const ProfileScreen: React.FC = () => {
       {isAuthenticated ? (
         <Button
           title="Logout"
+          loading={isLoggingOut}
+          loadingText="Logging out..."
           variant="primary"
           style={[styles.button, styles.logoutButton]}
           onPress={handleLogout}
+          disabled={isLoggingOut}
         />
       ) : (
         <Button

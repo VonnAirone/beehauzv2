@@ -7,10 +7,9 @@ import { useNavigation } from '@react-navigation/native';
 import { Search, Calendar, Bell, User, MapPin } from 'lucide-react-native';
 import { TenantStackParamList, TenantTabParamList } from './types';
 import { SearchScreen } from '../screens/tenant/search/SearchScreen';
-import { MapScreen } from '../screens/tenant/map/MapScreen';
+import { MapViewScreen } from '../screens/tenant/map';
 import { MyBookingsScreen } from '../screens/tenant/bookings/MyBookingsScreen';
 import { NotificationsScreen } from '../screens/tenant/notifications';
-import { ProfileScreen } from '../screens/shared/profile/ProfileScreen';
 import { BoardingHouseDetailScreen } from '../screens/tenant/boarding-house-detail';
 import { BlogDetailScreen } from '../screens/tenant/blog';
 import { FavoritesListScreen } from '../screens/tenant/favorites';
@@ -20,6 +19,9 @@ import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
 import { colors } from '../styles/colors';
 import { useResponsive } from '../hooks/useResponsive';
 import { DesktopSidebar } from '../components/common/DesktopSidebar';
+import { useAuthContext } from '../context/AuthContext';
+import { AuthPromptModal } from '../components/common/AuthPromptModal';
+import { FeatureType } from '../utils/guestAccess';
 
 const Tab = createBottomTabNavigator<TenantTabParamList>();
 const Stack = createStackNavigator<TenantStackParamList>();
@@ -28,6 +30,38 @@ const TenantTabs: React.FC = () => {
   const { isDesktop, isWeb } = useResponsive();
   const [activeTab, setActiveTab] = useState<string>('Search');
   const navigation = useNavigation<StackNavigationProp<TenantStackParamList>>();
+  const { isAuthenticated } = useAuthContext();
+  
+  // Auth prompt modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authFeature, setAuthFeature] = useState<FeatureType>('access_bookings');
+
+  // Tabs that require authentication
+  const authRequiredTabs: Record<string, FeatureType> = {
+    'MyBookings': 'access_bookings',
+    'Notifications': 'access_notifications',
+    'Profile': 'access_profile',
+  };
+
+  const handleAuthRequired = (tabName: string) => {
+    const feature = authRequiredTabs[tabName];
+    if (feature) {
+      setAuthFeature(feature);
+      setShowAuthModal(true);
+    }
+  };
+
+  const handleSignUp = () => {
+    setShowAuthModal(false);
+    // Navigate to signup screen
+    navigation.getParent()?.navigate('Auth', { screen: 'Register' });
+  };
+
+  const handleLogin = () => {
+    setShowAuthModal(false);
+    // Navigate to login screen
+    navigation.getParent()?.navigate('Auth', { screen: 'Login' });
+  };
 
   // Create navigation items with dynamic colors based on active tab
   const getNavigationItems = () => [
@@ -51,7 +85,7 @@ const TenantTabs: React.FC = () => {
         />
       ),
     },
-    {
+    { 
       name: 'MyBookings',
       label: 'Bookings',
       icon: (
@@ -100,11 +134,19 @@ const TenantTabs: React.FC = () => {
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.gray[400],
             headerShown: false,
-            tabBarStyle: isWeb ? styles.hiddenTabBar : undefined,
+            tabBarStyle: isDesktop && isWeb ? styles.hiddenTabBar : undefined,
           }}
           screenListeners={{
             tabPress: (e) => {
               const routeName = e.target?.split('-')[0] ?? '';
+              
+              // Check if the tab requires authentication
+              if (!isAuthenticated && authRequiredTabs[routeName]) {
+                e.preventDefault();
+                handleAuthRequired(routeName);
+                return;
+              }
+              
               if (routeName) setActiveTab(routeName);
             },
           }}
@@ -119,9 +161,9 @@ const TenantTabs: React.FC = () => {
               ),
             }}
           />
-          <Tab.Screen 
-            name="Map" 
-            component={MapScreen}
+          <Tab.Screen
+            name="Map"
+            component={MapViewScreen}
             options={{
               tabBarLabel: 'Map',
               tabBarIcon: ({ color, size }) => (
@@ -129,7 +171,7 @@ const TenantTabs: React.FC = () => {
               ),
             }}
           />
-          <Tab.Screen 
+          {/* <Tab.Screen 
             name="MyBookings" 
             component={MyBookingsScreen}
             options={{
@@ -148,10 +190,10 @@ const TenantTabs: React.FC = () => {
                 <Bell color={color} size={size} />
               ),
             }}
-          />
-          <Tab.Screen 
-            name="Profile" 
-            component={ProfileScreen}
+          /> */}
+          <Tab.Screen
+            name="Profile"
+            component={StudentProfileScreen}
             options={{
               tabBarLabel: 'Profile',
               tabBarIcon: ({ color, size }) => (
@@ -161,6 +203,15 @@ const TenantTabs: React.FC = () => {
           />
         </Tab.Navigator>
       </View>
+      
+      {/* Auth Prompt Modal for protected tabs */}
+      <AuthPromptModal
+        visible={showAuthModal}
+        feature={authFeature}
+        onClose={() => setShowAuthModal(false)}
+        onSignUp={handleSignUp}
+        onLogin={handleLogin}
+      />
     </View>
   );
 };
@@ -173,6 +224,7 @@ export const TenantNavigator: React.FC = () => {
       }}
     >
       <Stack.Screen name="TenantTabs" component={TenantTabs} />
+      <Stack.Screen name="MapView" component={MapViewScreen} />
       <Stack.Screen name="BoardingHouseDetail" component={BoardingHouseDetailScreen} />
       <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
       <Stack.Screen name="FavoritesList" component={FavoritesListScreen} />

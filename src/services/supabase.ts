@@ -29,7 +29,7 @@ export interface Database {
           id: string;
           email: string;
           full_name: string | null;
-          user_type: 'tenant' | 'owner';
+          user_type: 'tenant' | 'owner' | 'admin';
           created_at: string;
           updated_at: string;
         };
@@ -37,7 +37,7 @@ export interface Database {
           id?: string;
           email: string;
           full_name?: string | null;
-          user_type: 'tenant' | 'owner';
+          user_type: 'tenant' | 'owner' | 'admin';
           created_at?: string;
           updated_at?: string;
         };
@@ -45,7 +45,7 @@ export interface Database {
           id?: string;
           email?: string;
           full_name?: string | null;
-          user_type?: 'tenant' | 'owner';
+          user_type?: 'tenant' | 'owner' | 'admin';
           created_at?: string;
           updated_at?: string;
         };

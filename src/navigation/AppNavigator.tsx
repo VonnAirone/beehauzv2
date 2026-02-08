@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { AuthNavigator } from './AuthNavigator';
 import { OwnerNavigator } from './OwnerNavigator';
 import { TenantNavigator } from './TenantNavigator';
+import { AdminNavigator } from './AdminNavigator';
 import { RootStackParamList } from './types';
 import { useAuthContext } from '../context/AuthContext';
 import { useUserType } from '../context/UserTypeContext';
@@ -14,6 +15,16 @@ const Stack = createStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
+  const linking = {
+    prefixes: ['http://localhost:8081', 'http://localhost:19006'],
+    config: {
+      screens: {
+        Admin: 'admin',
+        Auth: 'auth',
+        Main: '',
+      },
+    },
+  };
   const navTheme = {
     ...DefaultTheme,
     colors: {
@@ -28,8 +39,8 @@ export const AppNavigator: React.FC = () => {
   // Determine if we should show auth or main app
   // Show auth only when explicitly requested (userType is null)
   // Otherwise, show main app with guest access enabled
-  const shouldShowAuth = userType === null && !isAuthenticated;
-  const currentUserType = user?.userType || 'tenant';
+  const shouldShowAuth = !isLoading && userType === null && !isAuthenticated;
+  const currentUserType = user?.userType || userType || 'tenant';
   
   const handleLoginPress = () => {
     setPendingAuthAction('login');
@@ -56,6 +67,11 @@ export const AppNavigator: React.FC = () => {
       return;
     }
 
+    if (currentUserType === 'admin') {
+      navigationRef.navigate({ name: 'Main', params: { screen: 'Owner' } } as never);
+      return;
+    }
+
     navigationRef.navigate({ name: 'Main', params: { screen: 'StudentProfile' } } as never);
   };
 
@@ -67,10 +83,50 @@ export const AppNavigator: React.FC = () => {
     setLogoNavigatePending(false);
   }, [logoNavigatePending, shouldShowAuth, currentUserType]);
 
+  React.useEffect(() => {
+    if (user?.userType && userType !== user.userType) {
+      setUserType(user.userType);
+    }
+  }, [user?.userType, userType, setUserType]);
+
   const displayName = user?.fullName || user?.email || 'Profile';
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const AdminGate: React.FC = () => {
+    const { isAuthenticated, user, isLoading } = useAuthContext();
+    const { setUserType } = useUserType();
+
+    React.useEffect(() => {
+      // Only set userType to admin if authenticated and user is admin
+      if (isAuthenticated && user?.userType === 'admin') {
+        setUserType('admin');
+      }
+    }, [setUserType, isAuthenticated, user?.userType]);
+
+    if (isLoading) {
+      return (
+        <View style={styles.loadingScreen}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      );
+    }
+
+    if (!isAuthenticated || user?.userType !== 'admin') {
+      return <AuthNavigator />;
+    }
+
+    return <AdminNavigator />;
+  };
+
   return (
-    <NavigationContainer theme={navTheme} ref={navigationRef}>
+    <NavigationContainer theme={navTheme} ref={navigationRef} linking={linking}>
       <View style={styles.appContainer}>
         <View style={styles.appHeader}>
           <TouchableOpacity onPress={handleLogoPress}>
@@ -95,12 +151,19 @@ export const AppNavigator: React.FC = () => {
         </View>
         <View style={styles.appContent}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Admin" component={AdminGate} />
             {shouldShowAuth ? (
               <Stack.Screen name="Auth" component={AuthNavigator} />
             ) : (
               <Stack.Screen 
                 name="Main" 
-                component={currentUserType === 'owner' ? OwnerNavigator : TenantNavigator} 
+                component={
+                  currentUserType === 'admin'
+                    ? AdminNavigator
+                    : currentUserType === 'owner'
+                      ? OwnerNavigator
+                      : TenantNavigator
+                }
               />
             )}
           </Stack.Navigator>
@@ -116,7 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F8FA',
   },
   appHeader: {
-    height: 80,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -173,5 +236,11 @@ const styles = StyleSheet.create({
   },
   appContent: {
     flex: 1,
+  },
+  loadingScreen: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7F8FA',
   },
 });

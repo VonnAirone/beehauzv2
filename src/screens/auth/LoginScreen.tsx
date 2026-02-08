@@ -210,12 +210,9 @@ export const LoginScreen: React.FC = () => {
             </View>
 
             <View style={styles.actions}>
-              <Button
-                title={isLoading ? 'Signing In...' : 'Sign In'}
-                onPress={handleLogin}
-                disabled={isLoading}
-                style={styles.loginButton}
-              />
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+                <Text style={{color: colors.white, fontSize: 16, fontWeight:'600'}}>{isLoading ? 'Signing In...' : 'Sign In'}</Text>
+              </TouchableOpacity>
               
               {isLoading && (
                 <ActivityIndicator
@@ -225,17 +222,9 @@ export const LoginScreen: React.FC = () => {
                 />
               )}
 
-              <View style={styles.signupPrompt}>
-                <Text style={[typography.textStyles.body, styles.signupText]}>
-                  Don't have an account?{' '}
-                  <Text 
-                    style={[typography.textStyles.body, styles.signupLink]}
-                    onPress={handleSignup}
-                  >
-                    Create Account
-                  </Text>
-                </Text>
-              </View>
+              <TouchableOpacity style={styles.signUpButton} onPress={handleSignup}>
+                <Text style={{color: colors.primary, fontSize: 16, fontWeight:'600'}}>Create an account</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -309,7 +298,19 @@ const styles = StyleSheet.create({
     gap: spacing[4], // 16px
   },
   loginButton: {
-    marginBottom: spacing[3], // 12px
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: colors.primary
+  },
+  signUpButton: {
+    alignItems: 'center',
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    color: colors.primary
   },
   loader: {
     alignSelf: 'center',

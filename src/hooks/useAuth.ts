@@ -84,15 +84,14 @@ export const useAuth = () => {
       setIsLoading(true);
       const response = await supabaseAuthService.logout();
       
-      if (response.success) {
-        setUser(null);
-      } else {
+      if (!response.success) {
         setError(response.error || 'Logout failed');
       }
     } catch (err) {
       if (__DEV__) console.error('Logout error:', err);
       setError('Logout failed');
     } finally {
+      setUser(null);
       setIsLoading(false);
     }
   };

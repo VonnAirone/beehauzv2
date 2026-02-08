@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal, useWindowDimensions, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Modal, useWindowDimensions, Linking, TextInput, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3, House, Check } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 import { Button, AuthPromptModal } from '../../../components/common';
@@ -15,6 +16,8 @@ import { useUserType } from '../../../context/UserTypeContext';
 import { canAccessFeature, FeatureType, BETA_TESTING_MODE } from '../../../utils/guestAccess';
 import { useAppRating } from '../../../context/AppRatingContext';
 import { TenantStackParamList } from '../../../navigation/types';
+import { Marquee } from '@animatereactnative/marquee';
+import { supabase } from '../../../services/supabase';
 
 type BoardingHouseDetailRouteProp = RouteProp<{
   BoardingHouseDetail: { boardingHouse: BoardingHouse };
@@ -25,15 +28,29 @@ export const BoardingHouseDetailScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<TenantStackParamList>>();
   const { boardingHouse } = route.params;
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, user } = useAuthContext();
   const { trackPropertyView, shouldShowAuthPrompt } = useGuestTracking();
   const { clearUserType } = useUserType();
   const { incrementTrigger } = useAppRating();
   const [roomInfoModalVisible, setRoomInfoModalVisible] = React.useState(false);
+  const [bookingModalVisible, setBookingModalVisible] = React.useState(false);
   const [authPromptVisible, setAuthPromptVisible] = React.useState(false);
   const [currentFeature, setCurrentFeature] = React.useState<FeatureType>('save_favorites');
+  const [bookingStartDate, setBookingStartDate] = React.useState('');
+  const [bookingEndDate, setBookingEndDate] = React.useState('');
+  const [bookingHeads, setBookingHeads] = React.useState('');
+  const [startDateValue, setStartDateValue] = React.useState<Date | null>(null);
+  const [endDateValue, setEndDateValue] = React.useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = React.useState(false);
+  const [showEndPicker, setShowEndPicker] = React.useState(false);
+  const [bookingAccepted, setBookingAccepted] = React.useState(false);
+  const [bookingError, setBookingError] = React.useState<string | null>(null);
+  const [isSubmittingBooking, setIsSubmittingBooking] = React.useState(false);
   const { width: windowWidth } = useWindowDimensions();
   const isSmallScreen = windowWidth < 768;
+  const isWeb = Platform.OS === 'web';
+  const disclaimerText =
+    'All information displayed is based on publicly available sources. Details may not reflect current availability, pricing, or conditions. Property owners may request updates or removal at any time.';
 
   const formatCurrency = (value?: number) => {
     if (!value || value <= 0) {
@@ -78,13 +95,104 @@ export const BoardingHouseDetailScreen: React.FC = () => {
       return;
     }
 
-    Alert.alert(
-      'Coming Soon! 🚀',
-      `The booking feature will be available soon!\n\nWe're working hard to bring you a seamless booking experience. Stay tuned for updates!`,
-      [
-        { text: 'Got it!', style: 'default' }
-      ]
-    );
+    setBookingModalVisible(true);
+  };
+
+  const handleBookingSubmit = async () => {
+    console.log('Booking submit triggered');
+    console.log('Boarding house payload:', {
+      property_id: (boardingHouse as any).property_id,
+      id: boardingHouse.id,
+      name: boardingHouse.name,
+      location: boardingHouse.location,
+    });
+
+    if (!bookingStartDate.trim()) {
+      setBookingError('Start date is required.');
+      return;
+    }
+
+    if (!bookingHeads.trim()) {
+      setBookingError('Number of heads is required.');
+      return;
+    }
+
+    if (!bookingAccepted) {
+      setBookingError('You must accept responsibility to proceed.');
+      return;
+    }
+
+    if (!user?.id) {
+      setBookingError('You must be logged in to book.');
+      return;
+    }
+
+    setIsSubmittingBooking(true);
+    setBookingError(null);
+
+    try {
+      const propertyId = (boardingHouse as any).property_id || null;
+      console.log('Looking up property in Supabase', { propertyId });
+
+      let property: { id: string; owner_id: string } | null = null;
+      let propertyError: any = null;
+
+      if (propertyId) {
+        const result = await supabase
+          .from('properties')
+          .select('id, owner_id')
+          .eq('id', propertyId)
+          .maybeSingle();
+        property = result.data as any;
+        propertyError = result.error;
+      } else {
+        const result = await supabase
+          .from('properties')
+          .select('id, owner_id')
+          .eq('name', boardingHouse.name)
+          .eq('address', boardingHouse.location)
+          .maybeSingle();
+        property = result.data as any;
+        propertyError = result.error;
+      }
+
+      console.log('Supabase property lookup result:', { property, propertyError });
+
+      if (propertyError || !property) {
+        setBookingError('Unable to find this property. Please try again later.');
+        return;
+      }
+
+      const { error: bookingError } = await supabase
+        .from('booking_requests')
+        .insert({
+          property_id: property.id,
+          requester_id: user.id,
+          requester_name: user.fullName || user.email || 'Guest',
+          start_date: bookingStartDate,
+          end_date: bookingEndDate || null,
+          heads_count: Number(bookingHeads),
+          status: 'new',
+        });
+
+      if (bookingError) {
+        console.log('Booking request insert error:', bookingError);
+        setBookingError(bookingError.message || 'Unable to submit booking request. Please try again.');
+        return;
+      }
+
+      setBookingModalVisible(false);
+      setBookingStartDate('');
+      setBookingEndDate('');
+      setBookingHeads('');
+      setBookingAccepted(false);
+      Alert.alert(
+        'Booking Request Sent',
+        'Your booking request has been submitted. The property owner will contact you soon.'
+      );
+    } finally {
+      setIsSubmittingBooking(false);
+    }
   };
 
   const handleContact = () => {
@@ -126,6 +234,30 @@ export const BoardingHouseDetailScreen: React.FC = () => {
     }
 
     Linking.openURL(telUrl);
+  };
+
+
+  const handleMessageOwner = async () => {
+    if (!canAccessFeature('contact_owner', isAuthenticated)) {
+      showAuthPrompt('contact_owner');
+      return;
+    }
+
+    const facebookUrl = boardingHouse.owner?.facebook_url?.trim();
+
+    if (!facebookUrl) {
+      Alert.alert('No Facebook Connected', 'This owner has not connected their Facebook profile yet.');
+      return;
+    }
+
+    const canOpen = await Linking.canOpenURL(facebookUrl);
+
+    if (!canOpen) {
+      Alert.alert('Unable to Open', 'Your device cannot open this link.');
+      return;
+    }
+
+    Linking.openURL(facebookUrl);
   };
 
   const handleLike = () => {
@@ -185,6 +317,11 @@ export const BoardingHouseDetailScreen: React.FC = () => {
     clearUserType();
   };
 
+  const formatDate = (value: Date | null) => {
+    if (!value) return '';
+    return value.toLocaleDateString('en-CA');
+  };
+
   const displayedReviews: Array<{
     id: number;
     reviewer: { name: string; initials: string };
@@ -198,10 +335,18 @@ export const BoardingHouseDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.marqueeContainer}>
+        <Marquee speed={.5} spacing={50} direction="horizontal" withGesture={false} style={styles.marquee}>
+          <Text style={styles.marqueeText} numberOfLines={1}>
+            {disclaimerText}
+          </Text>
+        </Marquee>
+      </View>
       <SafeAreaView style={[styles.container, {
         width: isSmallScreen ? '95%' : '70%'
       }]} edges={['top']}>
       {/* Header */}
+            
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -271,7 +416,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
 
 
           <Text style={[typography.textStyles.bodySmall, styles.description]}>
-            {boardingHouse.description || `Experience comfortable living at ${boardingHouse.name}. This well-maintained boarding house offers excellent facilities and a convenient location perfect for students and professionals. Enjoy a safe and friendly environment with all the amenities you need for a comfortable stay.`}
+            {boardingHouse.description}
           </Text>
         </View>
 
@@ -349,7 +494,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
                   <View style={styles.roomTypeIconContainer}>
                     <Users size={14} color={colors.primary} />
                     <Text style={[typography.textStyles.h6, styles.roomTypeName]}>
-                      STANDARD ROOM (4-Person)
+                      STANDARD ROOM
                     </Text>
                   </View>
                   <Text style={[typography.textStyles.h3, styles.roomTypePrice]}>
@@ -421,7 +566,9 @@ export const BoardingHouseDetailScreen: React.FC = () => {
                   </Text>
                   <View style={styles.ownerRating}>
                     <Star size={14} color="#FFD700" fill="#FFD700" />
-                    <Text style={styles.ownerRatingText}>4.8</Text>
+                    <Text style={styles.ownerRatingText}>
+                      {boardingHouse.rating}
+                    </Text>
                   </View>
                 </View>
                 <Text style={[typography.textStyles.bodySmall, styles.ownerJoined]}>
@@ -439,7 +586,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.ownerActionButton} 
-                onPress={() => Alert.alert('Message Owner', 'Messaging feature coming soon!')}
+                onPress={handleMessageOwner}
               >
                 <MessageCircle size={20} color={colors.primary} />
                 <Text style={styles.ownerActionButtonText}>Message</Text>
@@ -509,12 +656,171 @@ export const BoardingHouseDetailScreen: React.FC = () => {
             <Text style={styles.bookingPeriod}>/month</Text>
           </View>
           <Button
+            disabled
             title="Book Now"
             onPress={handleBookNow}
             style={styles.bookButton}
           />
         </View>
       </SafeAreaView>
+
+      <Modal
+        visible={bookingModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setBookingModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setBookingModalVisible(false)}
+          />
+          <View style={styles.bookingModal}>
+            <View style={styles.bookingModalHeader}>
+              <Text style={[typography.textStyles.h3, styles.bookingModalTitle]}>Reserve Request</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setBookingModalVisible(false)}
+              >
+                <X size={22} color={colors.gray[600]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.bookingHelperText}>
+              Provide your intended stay dates so the owner can confirm availability.
+            </Text>
+
+            <View style={styles.bookingField}>
+              <Text style={styles.bookingLabel}>Start date</Text>
+              {isWeb ? (
+                <TextInput
+                  value={bookingStartDate}
+                  placeholder='Ex. February 12, 2026'
+                  onChange={(event) =>
+                    setBookingStartDate((event.nativeEvent as any)?.target?.value ?? '')
+                  }
+                  style={styles.bookingInput}
+                  placeholderTextColor={colors.gray[400]}
+                  {...({ type: 'date' } as any)}
+                />
+              ) : (
+                <TouchableOpacity
+                  style={styles.bookingInputButton}
+                  onPress={() => setShowStartPicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={bookingStartDate ? styles.bookingInputText : styles.bookingInputPlaceholder}>
+                    {bookingStartDate || 'Select start date'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.bookingField}>
+              <Text style={styles.bookingLabel}>End date (optional)</Text>
+              {isWeb ? (
+                <TextInput
+                  value={bookingEndDate}
+                  placeholder='Ex. February 12, 2026'
+                  onChange={(event) =>
+                    setBookingEndDate((event.nativeEvent as any)?.target?.value ?? '')
+                  }
+                  style={styles.bookingInput}
+                  placeholderTextColor={colors.gray[400]}
+                  {...({ type: 'date' } as any)}
+                />
+              ) : (
+                <TouchableOpacity
+                  style={styles.bookingInputButton}
+                  onPress={() => setShowEndPicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={bookingEndDate ? styles.bookingInputText : styles.bookingInputPlaceholder}>
+                    {bookingEndDate || 'Select end date'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.bookingField}>
+              <Text style={styles.bookingLabel}>Number of heads</Text>
+              <TextInput
+                placeholder="e.g. 2"
+                value={bookingHeads}
+                onChangeText={setBookingHeads}
+                style={styles.bookingInput}
+                placeholderTextColor={colors.gray[400]}
+                keyboardType="number-pad"
+              />
+            </View>
+
+            {bookingStartDate.trim() && bookingHeads.trim() && (
+              <View style={styles.bookingPriceRow}>
+                <Text style={styles.bookingPriceLabel}>Estimated monthly total</Text>
+                <Text style={styles.bookingPriceValue}>
+                  {formatCurrency((Number(bookingHeads) || 0) * (boardingHouse.ratePerMonth || 0))}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.bookingCheckboxRow}
+              onPress={() => setBookingAccepted((prev) => !prev)}
+            >
+              <View style={[styles.bookingCheckbox, bookingAccepted && styles.bookingCheckboxChecked]}>
+                {bookingAccepted && <Check size={14} color={colors.white} />}
+              </View>
+              <Text style={styles.bookingCheckboxText}>
+                I have read and agreed to the{' '}
+                <Text style={styles.bookingLinkText}>Terms and Conditions</Text>, and{' '}
+                <Text style={styles.bookingLinkText}>Privacy Policy</Text>.
+              </Text>
+            </TouchableOpacity>
+
+            {bookingError && <Text style={styles.bookingError}>{bookingError}</Text>}
+
+            <Button
+              title="Submit Request"
+              onPress={handleBookingSubmit}
+              style={styles.submitBookingButton}
+              loading={isSubmittingBooking}
+              loadingText="Submitting..."
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {!isWeb && showStartPicker && (
+        <DateTimePicker
+          value={startDateValue ?? new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event, selectedDate) => {
+            setShowStartPicker(false);
+            if (selectedDate) {
+              setStartDateValue(selectedDate);
+              setBookingStartDate(formatDate(selectedDate));
+            }
+          }}
+        />
+      )}
+
+      {!isWeb && showEndPicker && (
+        <DateTimePicker
+          value={endDateValue ?? (startDateValue ?? new Date())}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event, selectedDate) => {
+            setShowEndPicker(false);
+            if (selectedDate) {
+              setEndDateValue(selectedDate);
+              setBookingEndDate(formatDate(selectedDate));
+            }
+          }}
+          minimumDate={startDateValue ?? undefined}
+        />
+      )}
 
       {/* Room Types Info Modal */}
       <Modal
@@ -599,10 +905,25 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
+  marqueeContainer: {
+    height: 32,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  marquee: {
+    width: '100%',
+    height: '100%',
+  },
+  marqueeText: {
+    color: colors.white,
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
+    padding: 8,
+  },
   container: {
     flex: 1,
     margin: 'auto',
-    marginTop: 5
   },
   header: {
     flexDirection: 'row',
@@ -720,6 +1041,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   location: {
+    fontSize: 12,
     color: colors.gray[600],
   },
   price: {
@@ -1158,6 +1480,129 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: colors.white,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  bookingModal: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
+  },
+  bookingModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  bookingModalTitle: {
+    color: colors.gray[900],
+  },
+  bookingHelperText: {
+    color: colors.gray[600],
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  bookingField: {
+    marginBottom: 14,
+  },
+  bookingLabel: {
+    color: colors.gray[700],
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  bookingInput: {
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: colors.gray[800],
+    backgroundColor: colors.white,
+  },
+  bookingInputButton: {
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: colors.white,
+  },
+  bookingInputText: {
+    color: colors.gray[800],
+    fontSize: 14,
+  },
+  bookingInputPlaceholder: {
+    color: colors.gray[400],
+    fontSize: 14,
+  },
+  bookingCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  bookingCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.gray[300],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  bookingCheckboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  bookingCheckboxText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.gray[600],
+    lineHeight: 18,
+  },
+  bookingLinkText: {
+    color: colors.primary,
+    fontFamily: 'Figtree_600SemiBold',
+    textDecorationLine: 'underline',
+  },
+  bookingError: {
+    color: colors.error,
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  bookingPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.primary + '10',
+    borderRadius: 10,
+  },
+  bookingPriceLabel: {
+    color: colors.gray[700],
+    fontSize: 12,
+  },
+  bookingPriceValue: {
+    color: colors.primary,
+    fontSize: 14,
+    fontFamily: 'Figtree_600SemiBold',
+  },
+  submitBookingButton: {
+    marginTop: 4,
   },
   modalHeader: {
     flexDirection: 'row',

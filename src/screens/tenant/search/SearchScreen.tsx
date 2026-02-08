@@ -5,13 +5,15 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { Heart, Filter, Search, X, BookOpen, MapPin } from 'lucide-react-native';
+import { Marquee } from '@animatereactnative/marquee';
 import { TenantStackParamList, TenantTabParamList } from '../../../navigation/types';
 import { BoardingHouseCard, ServiceSurveyModal, SearchFilterChips } from '../../../components/tenant';
 import { DEFAULT_PRICE_RANGES } from '../../../components/tenant/SearchFilterChips';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
-import { sampleBoardingHouses } from '../../../data/sampleBoardingHouses';
+import { supabase } from '../../../services/supabase';
 import { sampleBlogPosts } from '../../../data/sampleBlogPosts';
+import { BoardingHouse } from '../../../types/tenant';
 import { useFavorites } from '../../../context/FavoritesContext';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useGuestTracking } from '../../../context/GuestTrackingContext';
@@ -43,6 +45,11 @@ export const SearchScreen: React.FC = () => {
   const [selectedSchool, setSelectedSchool] = useState<string>('');
   const [authPromptVisible, setAuthPromptVisible] = useState(false);
   const [currentFeature, setCurrentFeature] = useState<FeatureType>('view_all_properties');
+  const [properties, setProperties] = useState<BoardingHouse[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(false);
+  const [propertiesError, setPropertiesError] = useState<string | null>(null);
+  const disclaimerText =
+    'All information displayed is based on publicly available sources. Details may not reflect current availability, pricing, or conditions. Property owners may request updates or removal at any time.';
   const {
     showSurveyModal,
     surveyType,
@@ -51,7 +58,6 @@ export const SearchScreen: React.FC = () => {
     closeSurvey,
     submitSurveyResponse,
   } = useServiceSurvey(isAuthenticated);
-
 
   const handleAuthPromptSignUp = () => {
     setAuthPromptVisible(false);
@@ -73,6 +79,8 @@ export const SearchScreen: React.FC = () => {
   const handlePropertyPress = (boardingHouse: any) => {
     // Track property view for rating system
     incrementTrigger('properties_viewed');
+    console.log('Property ID:', boardingHouse.id);
+    console.log('Property name/location:', boardingHouse.name, boardingHouse.location);
     
     // Navigate to property detail
     navigation.navigate('BoardingHouseDetail', { boardingHouse });
@@ -88,7 +96,66 @@ export const SearchScreen: React.FC = () => {
   };
 
 
-  const filterProperties = (properties: typeof sampleBoardingHouses) => {
+  React.useEffect(() => {
+    let isMounted = true;
+    const loadProperties = async () => {
+      setIsLoadingProperties(true);
+      setPropertiesError(null);
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('id, owner_id, name, address, description, created_at, owner:profiles(full_name, email)')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (!isMounted) return;
+
+        const mapped = (data ?? []).map((row: any) => {
+          const ownerName = row.owner?.full_name || row.owner?.email || 'Property Owner';
+          return {
+            id: row.id,
+            name: row.name,
+            location: row.address || 'Address not provided',
+            availableBeds: 0,
+            rating: 0,
+            ratePerMonth: 0,
+            description: row.description,
+            paymentTerms: {
+              advancePayment: 1,
+              deposit: 0,
+              electricityIncluded: false,
+              waterIncluded: false,
+            },
+            amenities: [],
+            images: [],
+            ownerId: row.owner_id,
+            owner: {
+              id: row.owner_id,
+              name: ownerName,
+            },
+            reviewCount: 0,
+            isAvailable: true,
+            createdAt: row.created_at,
+            updatedAt: row.created_at,
+          } as BoardingHouse;
+        });
+
+        setProperties(mapped);
+      } catch (err) {
+        if (!isMounted) return;
+        setPropertiesError(err instanceof Error ? err.message : 'Failed to load properties.');
+      } finally {
+        if (isMounted) setIsLoadingProperties(false);
+      }
+    };
+
+    loadProperties();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filterProperties = (properties: BoardingHouse[]) => {
     return properties.filter(property => {
       // Price filter
       const meetsPriceRange = property.ratePerMonth >= priceRange.min && 
@@ -138,7 +205,7 @@ export const SearchScreen: React.FC = () => {
     setPriceRange(isSameRange ? { min: 0, max: 10000 } : range);
   };
 
-  const filteredProperties = filterProperties(sampleBoardingHouses);
+  const filteredProperties = filterProperties(properties);
   const shouldShowResultsCount =
     (searchText.trim() !== '' || activeFilterCount() > 0) && filteredProperties.length > 0;
 
@@ -154,7 +221,16 @@ export const SearchScreen: React.FC = () => {
         {/* Guest View Progress Banner */}
         <GuestViewProgressBanner />
         
-        {allFilteredProperties.length === 0 ? (
+        {isLoadingProperties ? (
+          <View style={styles.noResultsContainer}>
+            <Text style={styles.noResultsTitle}>Loading properties...</Text>
+          </View>
+        ) : propertiesError ? (
+          <View style={styles.noResultsContainer}>
+            <Text style={styles.noResultsTitle}>Unable to load properties</Text>
+            <Text style={styles.noResultsText}>{propertiesError}</Text>
+          </View>
+        ) : allFilteredProperties.length === 0 ? (
           <View style={styles.noResultsContainer}>
             <Text style={styles.noResultsTitle}>No Properties Found</Text>
             <Text style={styles.noResultsText}>
@@ -249,6 +325,13 @@ export const SearchScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.marqueeContainer}>
+        <Marquee speed={.5} spacing={50} direction="horizontal" withGesture={false} style={styles.marquee}>
+          <Text style={styles.marqueeText} numberOfLines={1}>
+            {disclaimerText}
+          </Text>
+        </Marquee>
+      </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
         bounces={true}
@@ -262,7 +345,7 @@ export const SearchScreen: React.FC = () => {
               <Text style={[typography.textStyles.h2, styles.title]}>
                 Find suitable boarding houses with Beehauz
               </Text>
-              <Text style={[typography.textStyles.body, styles.subtitle]}>
+              <Text style={[typography.textStyles.bodySmall, styles.subtitle]}>
                 Search by location, price, or school. Explore verified listings near your campus.
               </Text>
             </View>
@@ -291,9 +374,13 @@ export const SearchScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.mapButton}>
+              <TouchableOpacity
+                style={styles.mapButton}
+                onPress={() => navigation.navigate('MapView')}
+                activeOpacity={0.7}
+              >
                 <MapPin size={32} color={colors.primary} />
-              </View>
+              </TouchableOpacity>
             )}
 
           </View>
@@ -461,24 +548,6 @@ export const SearchScreen: React.FC = () => {
                 })}
               </View>
             </View>
-
-            <View style={styles.filterActions}>
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={() => {
-                  clearAllFilters();
-                  setShowFilters(false);
-                }}
-              >
-                <Text style={styles.clearButtonText}>Clear</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.applyButton}
-                onPress={() => setShowFilters(false)}
-              >
-                <Text style={styles.applyButtonText}>Apply</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -510,7 +579,22 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     margin: 'auto',
-    paddingTop: 10,
+  },
+  marqueeContainer: {
+    height: 32,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  marquee: {
+    width: '100%',
+    height: '100%',
+  },
+  marqueeText: {
+    color: colors.white,
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
+    padding: 8,
   },
   header: {
     paddingHorizontal: 20,
@@ -538,7 +622,7 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   filterHeaderButton: {
     width: 40,
@@ -618,7 +702,6 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 12,
     marginTop: 10,
-    marginBottom: 8,
   },
   searchBar: {
     flex: 1,
@@ -740,7 +823,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 80,
-    maxHeight: '70%',
+    maxHeight: '85%',
   },
   filterHeader: {
     flexDirection: 'row',

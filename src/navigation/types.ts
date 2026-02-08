@@ -4,12 +4,14 @@ import { BlogPost } from '../data/sampleBlogPosts';
 
 export type RootStackParamList = {
   Auth: undefined;
-  Main: NavigatorScreenParams<TenantStackParamList> | NavigatorScreenParams<OwnerStackParamList>;
+  Main: NavigatorScreenParams<TenantStackParamList> | NavigatorScreenParams<OwnerStackParamList> | NavigatorScreenParams<AdminStackParamList>;
+  Admin: undefined;
 };
 
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  OwnerSignup: undefined;
 };
 
 export type OwnerStackParamList = {
@@ -26,6 +28,11 @@ export type OwnerStackParamList = {
   Profile: undefined;
   Messages: undefined;
   Chat: { chatId: string };
+};
+
+export type AdminStackParamList = {
+  Tenants: undefined;
+  Owner: undefined;
 };
 
 export type TenantTabParamList = {

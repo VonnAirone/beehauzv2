@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, useWindowDimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, ImageBackground, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Star, MapPin, Bed, Zap, Droplets, Users, Info } from 'lucide-react-native';
 import { BoardingHouse } from '../../types/tenant';
 import { Card } from '../common/Card';
@@ -17,6 +17,7 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   onPress,
 }) => {
   const { isDesktop, isTablet } = useResponsive();
+  const [showTooltip, setShowTooltip] = React.useState(false);
   
   const {
     name,
@@ -49,12 +50,12 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
       event.stopPropagation();
     }
 
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.alert('Rate has not been confirmed yet.');
-      return;
+    setShowTooltip(!showTooltip);
+    
+    // Auto-hide tooltip after 3 seconds
+    if (!showTooltip) {
+      setTimeout(() => setShowTooltip(false), 3000);
     }
-
-    Alert.alert('Rate not confirmed', 'This rate has not been confirmed yet.');
   };
 
   const renderRating = () => (
@@ -128,7 +129,21 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
               (isDesktop || isTablet) && styles.imageEmptyDesktop,
             ]}
           >
-            <Text style={styles.imageEmptyText}>No photos added</Text>
+            <ImageBackground
+              source={require('../../assets/placeholder.jpeg')}
+              style={styles.placeholderImage}
+              imageStyle={styles.placeholderImageInner}
+              resizeMode="cover"
+            >
+              <View style={{
+                backgroundColor: colors.white,
+                padding: 10,
+                borderRadius: 5
+                }}>
+                <Text style={styles.imageEmptyText}>No photos added</Text>
+              </View>
+              
+            </ImageBackground>
           </View>
         )}
         
@@ -158,15 +173,26 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
                 {formatPrice(ratePerMonth)}/month
               </Text>
               {!isRateConfirmed && (
-                <TouchableOpacity
-                  style={styles.rateInfoButton}
-                  onPress={handleRateInfoPress}
-                  {...(Platform.OS === 'web'
-                    ? { title: 'Rate has not been confirmed yet.' }
-                    : {})}
-                >
-                  <Info size={14} color={colors.gray[500]} />
-                </TouchableOpacity>
+                <View style={styles.tooltipContainer}>
+                  <TouchableOpacity
+                    style={styles.rateInfoButton}
+                    onPress={handleRateInfoPress}
+                    {...(Platform.OS === 'web'
+                      ? {
+                          onMouseEnter: () => setShowTooltip(true),
+                          onMouseLeave: () => setShowTooltip(false),
+                        }
+                      : {})}
+                  >
+                    <Info size={14} color={colors.gray[500]} />
+                  </TouchableOpacity>
+                  {showTooltip && (
+                    <View style={styles.tooltip}>
+                      <Text style={styles.tooltipText}>Rate has not been confirmed yet.</Text>
+                      <View style={styles.tooltipArrow} />
+                    </View>
+                  )}
+                </View>
               )}
             </View>
 
@@ -222,16 +248,27 @@ const styles = StyleSheet.create({
     height: 170,
     borderRadius: 0,
     backgroundColor: colors.gray[100],
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
   imageEmptyDesktop: {
     height: 220,
   },
   imageEmptyText: {
-    color: colors.gray[500],
+    color: colors.primary,
     fontSize: 13,
     fontFamily: 'Figtree_500Medium',
+  },
+  placeholderImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderImageInner: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.5
   },
   ratingBadge: {
     position: 'absolute',
@@ -288,9 +325,57 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  tooltipContainer: {
+    position: 'relative',
+  },
   rateInfoButton: {
     padding: 4,
     borderRadius: 999,
+  },
+  tooltip: {
+    position: 'absolute',
+    bottom: '100%',
+    left: '50%',
+    transform: [{ translateX: -80 }],
+    backgroundColor: colors.gray[800],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    width: 160,
+    zIndex: 1000,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5,
+      },
+    }),
+  },
+  tooltipText: {
+    color: colors.white,
+    fontSize: 12,
+    fontFamily: 'Figtree_500Medium',
+    textAlign: 'center',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -6,
+    left: '50%',
+    marginLeft: -6,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: colors.gray[800],
   },
   bedsContainer: {
     flexDirection: 'row',

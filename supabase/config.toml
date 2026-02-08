@@ -1,0 +1,12 @@
+# Supabase CLI configuration
+# Update project_id after running `supabase link`
+project_id = "fqjmdvvbikawuacolpyu"
+
+[api]
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+port = 54323

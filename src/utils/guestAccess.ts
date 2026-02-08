@@ -6,7 +6,7 @@
 // Beta Testing Flag - Set to true to disable property viewing limits
 export const BETA_TESTING_MODE = true;
 
-export type FeatureType = 
+export type FeatureType =
   | 'browse_properties'
   | 'view_property_details'
   | 'view_photos'
@@ -20,7 +20,10 @@ export type FeatureType =
   | 'write_review'
   | 'view_owner_details'
   | 'access_full_map'
-  | 'view_all_properties';
+  | 'view_all_properties'
+  | 'access_profile'
+  | 'access_bookings'
+  | 'access_notifications';
 
 // Features available to guest users
 const GUEST_ALLOWED_FEATURES: FeatureType[] = [
@@ -41,7 +44,10 @@ const AUTH_REQUIRED_FEATURES: FeatureType[] = [
   'write_review',
   'view_owner_details',
   'access_full_map',
-  'view_all_properties'
+  'view_all_properties',
+  'access_profile',
+  'access_bookings',
+  'access_notifications'
 ];
 
 export const canAccessFeature = (feature: FeatureType, isAuthenticated: boolean): boolean => {
@@ -112,6 +118,21 @@ export const AUTH_PROMPT_MESSAGES = {
     title: "See All Properties",
     message: "You've seen our featured properties! Sign up to browse our complete collection.",
     action: "Sign Up for Full Access"
+  },
+  access_profile: {
+    title: "Create Your Profile",
+    message: "Sign up to create your profile, save favorites, and manage your bookings all in one place.",
+    action: "Sign Up to Continue"
+  },
+  access_bookings: {
+    title: "View Your Bookings",
+    message: "Sign up to view and manage your booking requests, track your reservations, and communicate with property owners.",
+    action: "Sign Up to View Bookings"
+  },
+  access_notifications: {
+    title: "Stay Updated",
+    message: "Sign up to receive notifications about your bookings, messages from property owners, and important updates.",
+    action: "Sign Up for Notifications"
   }
 };
 

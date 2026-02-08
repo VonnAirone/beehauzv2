@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ArrowLeft, GraduationCap, MapPin, Phone, Mail, Heart, Calendar, Edit3 } from 'lucide-react-native';
-import { Card } from '../../../components/common';
+import { Button, Card } from '../../../components/common';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useFavorites } from '../../../context/FavoritesContext';
+import { useUserType } from '../../../context/UserTypeContext';
 import { TenantStackParamList } from '../../../navigation/types';
 import { EditProfileScreen } from '../../shared/profile/EditProfileScreen';
 import { typography } from '../../../styles/typography';
@@ -16,12 +17,13 @@ type StudentProfileNavigationProp = StackNavigationProp<TenantStackParamList, 'S
 
 export const StudentProfileScreen: React.FC = () => {
   const navigation = useNavigation<StudentProfileNavigationProp>();
-  const { user } = useAuthContext();
+  const { user, logout, isAuthenticated } = useAuthContext();
   const { favorites } = useFavorites();
+  const { clearUserType, setPendingAuthAction } = useUserType();
   const { width: windowWidth } = useWindowDimensions();
   const isSmallScreen = windowWidth < 768;
   const [isEditModalVisible, setEditModalVisible] = React.useState(false);
-
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
   const displayName = user?.fullName || user?.email?.split('@')[0] || 'Student';
   const displayEmail = user?.email || 'No email provided';
@@ -32,6 +34,21 @@ export const StudentProfileScreen: React.FC = () => {
 
   const handleEditProfile = () => {
     setEditModalVisible(true);
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      setPendingAuthAction('login');
+      clearUserType();
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -63,20 +80,11 @@ export const StudentProfileScreen: React.FC = () => {
                     </Text>
                     </View>
                     <View style={styles.avatarInfo}>
-                    <Text style={[typography.textStyles.h3, styles.name]}>{displayName}</Text>
-                    <Text style={[typography.textStyles.body, styles.caption]}>{displayEmail}</Text>
+                    <Text style={[typography.textStyles.h4, styles.name]}>{displayName}</Text>
+                    <Text style={[typography.textStyles.caption, styles.caption]}>{displayEmail}</Text>
                     </View>
                 </View>
             </View>        
-         
-
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Calendar size={18} color={colors.primary} />
-              <Text style={styles.statValue}>{memberSince}</Text>
-              <Text style={styles.statLabel}>Member Since</Text>
-            </View>
-          </View>
         </Card>
 
         <View style={[styles.sectionRow, isSmallScreen && styles.sectionColumn]}>
@@ -152,6 +160,14 @@ export const StudentProfileScreen: React.FC = () => {
             </ScrollView>
           )}
         </Card>
+
+          <Button
+            title={isLoggingOut ? 'Logging out...' : 'Log out'}
+            variant="primary"
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+            style={styles.logoutButton}
+          />
 
       </ScrollView>
 
@@ -357,6 +373,11 @@ const styles = StyleSheet.create({
   emptyFavoritesText: {
     fontSize: 13,
     color: colors.gray[500],
+  },
+  logoutButton: {
+    backgroundColor: colors.primary,
+    marginHorizontal: 5,
+    marginBottom: 20
   },
   modalOverlay: {
     flex: 1,

@@ -100,22 +100,46 @@ class SupabaseAuthService {
         credentials.password
       );
 
-      // If admin login, return success without Supabase auth
+      // If admin login, also establish a Supabase session
       if (isAdminLogin) {
-        const adminUser: User = {
-          id: 'admin-user',
+        const { data: adminAuth, error: adminAuthError } = await supabase.auth.signInWithPassword({
           email: credentials.email,
-          fullName: 'System Administrator',
-          userType: 'admin',
-          emailVerified: true,
-          createdAt: new Date().toISOString(),
-          phone: null,
-          address: null,
-          university: null,
-          yearLevel: null,
-          dateOfBirth: null,
+          password: credentials.password,
+        });
+
+        if (adminAuthError || !adminAuth.user) {
+          return {
+            success: false,
+            error: adminAuthError?.message || 'Admin login failed. Please check Supabase credentials.',
+          };
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', adminAuth.user.id)
+          .single();
+
+        if (!profile || profile.user_type !== 'admin') {
+          await supabase
+            .from('profiles')
+            .upsert({
+              id: adminAuth.user.id,
+              email: adminAuth.user.email || credentials.email,
+              full_name: profile?.full_name || 'System Administrator',
+              user_type: 'admin',
+            }, { onConflict: 'id' });
+        }
+
+        const mapped = this.mapToUser(adminAuth.user, profile);
+
+        return {
+          success: true,
+          user: {
+            ...mapped,
+            userType: 'admin',
+          },
         };
-        return { success: true, user: adminUser };
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
