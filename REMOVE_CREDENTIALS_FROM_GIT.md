@@ -190,50 +190,91 @@ npm install -g eas-cli
 eas login
 ```
 
-**Create secrets** with your NEW credentials:
+**Create environment variables** with your NEW credentials:
 
 ```bash
 # Navigate to your project
 cd /Users/aironevonnvillasor/beehauzv2
 
-# Create each secret (replace YOUR_NEW_... with actual values)
-eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL \
-  --value "https://fqjmdvvbikawuacolpyu.supabase.co" --type string
+# Create each environment variable for PRODUCTION (replace YOUR_NEW_... with actual values)
+eas env:create EXPO_PUBLIC_SUPABASE_URL \
+  --value "https://fqjmdvvbikawuacolpyu.supabase.co" \
+  --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY \
-  --value "YOUR_NEW_ROTATED_ANON_KEY_FROM_STEP_5A" --type string
+eas env:create EXPO_PUBLIC_SUPABASE_ANON_KEY \
+  --value "YOUR_NEW_ROTATED_ANON_KEY_FROM_STEP_5A" \
+  --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_EMAIL \
-  --value "admin@beehauz.com" --type string
+eas env:create EXPO_PUBLIC_ADMIN_EMAIL \
+  --value "admin@beehauz.com" \
+  --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_PASSWORD \
-  --value "YOUR_NEW_PASSWORD_FROM_STEP_5B" --type string
+eas env:create EXPO_PUBLIC_ADMIN_PASSWORD \
+  --value "YOUR_NEW_PASSWORD_FROM_STEP_5B" \
+  --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_USERNAME \
-  --value "beehauz_admin" --type string
+eas env:create EXPO_PUBLIC_ADMIN_USERNAME \
+  --value "beehauz_admin" \
+  --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_ACCESS_CODE \
-  --value "YOUR_NEW_CODE_FROM_STEP_5C" --type string
+eas env:create EXPO_PUBLIC_ADMIN_ACCESS_CODE \
+  --value "YOUR_NEW_CODE_FROM_STEP_5C" \
+  --environment production
+
+# Repeat for PREVIEW environment
+eas env:create EXPO_PUBLIC_SUPABASE_URL \
+  --value "https://fqjmdvvbikawuacolpyu.supabase.co" \
+  --environment preview
+
+eas env:create EXPO_PUBLIC_SUPABASE_ANON_KEY \
+  --value "YOUR_NEW_ROTATED_ANON_KEY_FROM_STEP_5A" \
+  --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_EMAIL \
+  --value "admin@beehauz.com" \
+  --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_PASSWORD \
+  --value "YOUR_NEW_PASSWORD_FROM_STEP_5B" \
+  --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_USERNAME \
+  --value "beehauz_admin" \
+  --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_ACCESS_CODE \
+  --value "YOUR_NEW_CODE_FROM_STEP_5C" \
+  --environment preview
 ```
 
-**Verify secrets were created:**
+**Note:** The old `eas secret:create` command is deprecated. Always use `eas env:create` as shown above.
+
+**Verify environment variables were created:**
 
 ```bash
-eas secret:list
+eas env:list
 ```
 
 Expected output:
 ```
-┌─────────────────────────────────┬─────────┬───────────┬──────────┐
-│ Name                            │ Type    │ Updated   │ Value    │
-├─────────────────────────────────┼─────────┼───────────┼──────────┤
-│ EXPO_PUBLIC_SUPABASE_URL        │ string  │ Just now  │ ••••••   │
-│ EXPO_PUBLIC_SUPABASE_ANON_KEY   │ string  │ Just now  │ ••••••   │
-│ EXPO_PUBLIC_ADMIN_EMAIL         │ string  │ Just now  │ ••••••   │
-│ EXPO_PUBLIC_ADMIN_PASSWORD      │ string  │ Just now  │ ••••••   │
-│ EXPO_PUBLIC_ADMIN_USERNAME      │ string  │ Just now  │ ••••••   │
-│ EXPO_PUBLIC_ADMIN_ACCESS_CODE   │ string  │ Just now  │ ••••••   │
-└─────────────────────────────────┴─────────┴───────────┴──────────┘
+Environment variables for @aironevonn/my-new-app
+
+┌────────────────────────────────┬──────────────┬──────────┐
+│ Name                           │ Environments │ Updated  │
+├────────────────────────────────┼──────────────┼──────────┤
+│ EXPO_PUBLIC_SUPABASE_URL       │ production   │ Just now │
+│                                │ preview      │          │
+│ EXPO_PUBLIC_SUPABASE_ANON_KEY  │ production   │ Just now │
+│                                │ preview      │          │
+│ EXPO_PUBLIC_ADMIN_EMAIL        │ production   │ Just now │
+│                                │ preview      │          │
+│ EXPO_PUBLIC_ADMIN_PASSWORD     │ production   │ Just now │
+│                                │ preview      │          │
+│ EXPO_PUBLIC_ADMIN_USERNAME     │ production   │ Just now │
+│                                │ preview      │          │
+│ EXPO_PUBLIC_ADMIN_ACCESS_CODE  │ production   │ Just now │
+│                                │ preview      │          │
+└────────────────────────────────┴──────────────┴──────────┘
 ```
 
 ---

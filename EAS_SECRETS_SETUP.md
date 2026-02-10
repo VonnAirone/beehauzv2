@@ -18,30 +18,49 @@ npm install -g eas-cli
 eas login
 ```
 
-### 3. Create Secrets for Your Project
+### 3. Create Environment Variables for Your Project
 
-Run these commands to create each secret:
+**IMPORTANT:** First rotate your credentials (see Step 5 in REMOVE_CREDENTIALS_FROM_GIT.md), then run these commands with your NEW values:
 
 ```bash
-# Supabase credentials
-eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value "https://fqjmdvvbikawuacolpyu.supabase.co" --type string
+# For PRODUCTION environment
+eas env:create EXPO_PUBLIC_SUPABASE_URL --value "https://fqjmdvvbikawuacolpyu.supabase.co" --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "YOUR_NEW_ROTATED_ANON_KEY_HERE" --type string
+eas env:create EXPO_PUBLIC_SUPABASE_ANON_KEY --value "YOUR_NEW_ROTATED_ANON_KEY" --environment production
 
-# Admin credentials (ROTATE THESE FIRST!)
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_EMAIL --value "admin@beehauz.com" --type string
+eas env:create EXPO_PUBLIC_ADMIN_EMAIL --value "admin@beehauz.com" --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_PASSWORD --value "YOUR_NEW_STRONG_PASSWORD_HERE" --type string
+eas env:create EXPO_PUBLIC_ADMIN_PASSWORD --value "YOUR_NEW_STRONG_PASSWORD" --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_USERNAME --value "beehauz_admin" --type string
+eas env:create EXPO_PUBLIC_ADMIN_USERNAME --value "beehauz_admin" --environment production
 
-eas secret:create --scope project --name EXPO_PUBLIC_ADMIN_ACCESS_CODE --value "YOUR_NEW_ACCESS_CODE_HERE" --type string
+eas env:create EXPO_PUBLIC_ADMIN_ACCESS_CODE --value "YOUR_NEW_ACCESS_CODE" --environment production
+
+# For PREVIEW environment (can use same values or different ones)
+eas env:create EXPO_PUBLIC_SUPABASE_URL --value "https://fqjmdvvbikawuacolpyu.supabase.co" --environment preview
+
+eas env:create EXPO_PUBLIC_SUPABASE_ANON_KEY --value "YOUR_NEW_ROTATED_ANON_KEY" --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_EMAIL --value "admin@beehauz.com" --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_PASSWORD --value "YOUR_NEW_STRONG_PASSWORD" --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_USERNAME --value "beehauz_admin" --environment preview
+
+eas env:create EXPO_PUBLIC_ADMIN_ACCESS_CODE --value "YOUR_NEW_ACCESS_CODE" --environment preview
 ```
 
-### 4. Verify Secrets Were Created
+**Note:** The old `eas secret:create` command is deprecated. Use `eas env:create` as shown above.
+
+### 4. Verify Environment Variables Were Created
 
 ```bash
-eas secret:list
+# List all environment variables
+eas env:list
+
+# Or list for specific environment
+eas env:list --environment production
+eas env:list --environment preview
 ```
 
 ### 5. Build Your App

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Beehauz",
-    "slug": "beehauz",
+    "slug": "my-new-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/adaptive-icon.png",
