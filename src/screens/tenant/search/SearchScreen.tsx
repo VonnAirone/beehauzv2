@@ -79,9 +79,7 @@ export const SearchScreen: React.FC = () => {
   const handlePropertyPress = (boardingHouse: any) => {
     // Track property view for rating system
     incrementTrigger('properties_viewed');
-    console.log('Property ID:', boardingHouse.id);
-    console.log('Property name/location:', boardingHouse.name, boardingHouse.location);
-    
+
     // Navigate to property detail
     navigation.navigate('BoardingHouseDetail', { boardingHouse });
   };

@@ -1,6 +1,7 @@
 import { supabase, Database } from './supabase';
 import { AuthError, Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { AdminAccessManager } from './adminAccessManager';
+import { authRateLimiter } from '../utils/rateLimiter';
 
 export interface LoginCredentials {
   email: string;
@@ -94,9 +95,19 @@ class SupabaseAuthService {
   // Login with email and password
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      // Check rate limiting
+      const rateLimitCheck = authRateLimiter.isAllowed(credentials.email.toLowerCase());
+      if (!rateLimitCheck.isAllowed) {
+        const minutes = Math.ceil((rateLimitCheck.timeRemaining || 0) / 60);
+        return {
+          success: false,
+          error: `Too many login attempts. Please try again in ${minutes} minute${minutes !== 1 ? 's' : ''}.`,
+        };
+      }
+
       // Check for admin credentials first (before Supabase auth)
       const isAdminLogin = await AdminAccessManager.checkAdminCredentials(
-        credentials.email, 
+        credentials.email,
         credentials.password
       );
 
@@ -108,6 +119,9 @@ class SupabaseAuthService {
         });
 
         if (adminAuthError || !adminAuth.user) {
+          // Record failed attempt
+          authRateLimiter.recordAttempt(credentials.email.toLowerCase());
+
           return {
             success: false,
             error: adminAuthError?.message || 'Admin login failed. Please check Supabase credentials.',
@@ -133,6 +147,9 @@ class SupabaseAuthService {
 
         const mapped = this.mapToUser(adminAuth.user, profile);
 
+        // Reset rate limiter on successful admin login
+        authRateLimiter.reset(credentials.email.toLowerCase());
+
         return {
           success: true,
           user: {
@@ -148,6 +165,9 @@ class SupabaseAuthService {
       });
 
       if (error) {
+        // Record failed attempt
+        authRateLimiter.recordAttempt(credentials.email.toLowerCase());
+
         return {
           success: false,
           error: this.formatAuthError(error),
@@ -170,11 +190,17 @@ class SupabaseAuthService {
 
       const user = this.mapToUser(data.user, profile);
 
+      // Reset rate limiter on successful login
+      authRateLimiter.reset(credentials.email.toLowerCase());
+
       return {
         success: true,
         user,
       };
     } catch (error) {
+      // Record failed attempt
+      authRateLimiter.recordAttempt(credentials.email.toLowerCase());
+
       return {
         success: false,
         error: 'An unexpected error occurred during login.',

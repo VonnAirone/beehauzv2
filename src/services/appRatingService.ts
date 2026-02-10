@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { appRatingSchema } from '../utils/validationSchemas';
 
 export interface AppRating {
   id?: string;
@@ -28,6 +29,16 @@ class AppRatingService {
   // Submit a new app rating
   async submitAppRating(data: RatingSubmissionData): Promise<{ success: boolean; error?: string; data?: AppRating }> {
     try {
+      // Validate input data
+      const validation = appRatingSchema.safeParse(data);
+      if (!validation.success) {
+        const errorMessage = validation.error.errors[0]?.message || 'Invalid input data';
+        return {
+          success: false,
+          error: errorMessage,
+        };
+      }
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       

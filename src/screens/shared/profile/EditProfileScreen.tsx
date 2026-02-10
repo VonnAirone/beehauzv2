@@ -219,13 +219,10 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onClose, v
     }
 
     setIsLoading(true);
-    
+
     try {
-      console.log('Starting profile update for user:', user.id);
-      console.log('Form data:', formData);
-      
       const combinedPhone = formData.phoneNumber ? `${formData.countryCode}${formData.phoneNumber}` : '';
-      
+
       const updateData = {
         fullName: formData.fullName.trim() || undefined,
         phone: combinedPhone.trim() || undefined,
@@ -234,20 +231,14 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ onClose, v
         yearLevel: formData.yearLevel.trim() || undefined,
         dateOfBirth: formData.dateOfBirth.trim() || undefined,
       };
-      
-      console.log('Update data to send:', updateData);
-      
+
       const result = await supabaseAuthService.updateProfile(user.id, updateData);
-      
-      console.log('Update result:', result);
 
       if (result.success) {
         // Refresh user data to reflect changes immediately
-        console.log('Profile updated successfully, refreshing user data...');
         const refreshResult = await refreshUser();
-        
+
         if (refreshResult.success) {
-          console.log('User data refreshed successfully');
         } else {
           console.warn('Failed to refresh user data:', refreshResult.error);
         }

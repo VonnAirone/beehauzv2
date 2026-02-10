@@ -21,6 +21,7 @@ import { typography } from '../../styles/typography';
 import { colors } from '../../styles/colors';
 import { spacing } from '../../styles/spacing';
 import { AuthStackParamList } from '../../navigation/types';
+import { validatePassword, getPasswordErrorMessage } from '../../utils/passwordValidator';
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -60,11 +61,6 @@ export const SignupScreen: React.FC = () => {
     return emailRegex.test(email);
   };
 
-  const validatePassword = (password: string): boolean => {
-    // At least 6 characters for consistency with Supabase and LoginScreen
-    return password.length >= 6;
-  };
-
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
@@ -85,8 +81,11 @@ export const SignupScreen: React.FC = () => {
     // Password validation
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (!validatePassword(formData.password)) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else {
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.isValid) {
+        newErrors.password = getPasswordErrorMessage(passwordValidation);
+      }
     }
 
     // Confirm Password validation
