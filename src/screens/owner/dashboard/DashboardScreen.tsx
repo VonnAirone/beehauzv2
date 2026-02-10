@@ -172,9 +172,7 @@ export const OwnerDashboardScreen: React.FC = () => {
     return [
       { label: 'Total Tenants', value: String(totalTenants) },
       { label: 'Active Tenants', value: String(activeTenants) },
-      { label: 'Left Tenants', value: String(leftTenants) },
-      { label: 'Pending Payments', value: String(pendingPayments) },
-      { label: 'Due This Week', value: String(dueThisWeek) },
+      { label: 'Pending Payments', value: String(pendingPayments) }
     ];
   }, [tenants]);
 
@@ -433,7 +431,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statCard: {
-    flexBasis: '31%',
+    flexGrow: 1,
     minWidth: 160,
     backgroundColor: colors.white,
     borderRadius: 12,

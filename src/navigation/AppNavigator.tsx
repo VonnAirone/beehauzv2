@@ -110,6 +110,15 @@ export const AppNavigator: React.FC = () => {
       }
     }, [setUserType, isAuthenticated, user?.userType]);
 
+    // Redirect authenticated non-admin users to Main
+    React.useEffect(() => {
+      if (isAuthenticated && user?.userType && user.userType !== 'admin') {
+        if (navigationRef.isReady()) {
+          navigationRef.navigate({ name: 'Main', params: undefined } as never);
+        }
+      }
+    }, [isAuthenticated, user?.userType]);
+
     if (isLoading) {
       return (
         <View style={styles.loadingScreen}>
@@ -151,12 +160,11 @@ export const AppNavigator: React.FC = () => {
         </View>
         <View style={styles.appContent}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Admin" component={AdminGate} />
             {shouldShowAuth ? (
               <Stack.Screen name="Auth" component={AuthNavigator} />
             ) : (
-              <Stack.Screen 
-                name="Main" 
+              <Stack.Screen
+                name="Main"
                 component={
                   currentUserType === 'admin'
                     ? AdminNavigator
@@ -166,6 +174,7 @@ export const AppNavigator: React.FC = () => {
                 }
               />
             )}
+            <Stack.Screen name="Admin" component={AdminGate} />
           </Stack.Navigator>
         </View>
       </View>

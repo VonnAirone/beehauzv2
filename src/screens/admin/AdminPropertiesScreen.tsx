@@ -252,74 +252,78 @@ export const AdminPropertiesScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.tableHeaderRow}>
-          <Text style={[styles.tableHeaderCell, styles.colName]}>Name</Text>
-          <Text style={[styles.tableHeaderCell, styles.colAddress]}>Address</Text>
-          <Text style={[styles.tableHeaderCell, styles.colOwner]}>Owner</Text>
-          <Text style={[styles.tableHeaderCell, styles.colPrice]}>Price</Text>
-          <Text style={[styles.tableHeaderCell, styles.colAccredited]}>Accredited</Text>
-          <Text style={[styles.tableHeaderCell, styles.colCoordinates]}>Coordinates</Text>
-          <Text style={[styles.tableHeaderCell, styles.colActions]}>Actions</Text>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+          <View>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.tableHeaderCell, styles.colName]}>Name</Text>
+              <Text style={[styles.tableHeaderCell, styles.colAddress]}>Address</Text>
+              <Text style={[styles.tableHeaderCell, styles.colOwner]}>Owner</Text>
+              <Text style={[styles.tableHeaderCell, styles.colPrice]}>Price</Text>
+              <Text style={[styles.tableHeaderCell, styles.colAccredited]}>Accredited</Text>
+              <Text style={[styles.tableHeaderCell, styles.colCoordinates]}>Coordinates</Text>
+              <Text style={[styles.tableHeaderCell, styles.colActions]}>Actions</Text>
+            </View>
 
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading properties...</Text>
-          </View>
-        ) : properties.length === 0 ? (
-          <Text style={styles.emptyText}>No properties found.</Text>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false} style={styles.tableScroll}>
-            {properties.map((property) => (
-              <View key={property.id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.colName]} numberOfLines={1}>
-                  {property.name}
-                </Text>
-                <Text style={[styles.tableCell, styles.colAddress]} numberOfLines={1}>
-                  {property.address || '—'}
-                </Text>
-                <Text style={[styles.tableCell, styles.colOwner]} numberOfLines={1}>
-                  {property.owner_name || '—'}
-                </Text>
-                <Text style={[styles.tableCell, styles.colPrice]} numberOfLines={1}>
-                  {formatPrice(property.price)}
-                </Text>
-                <View style={styles.colAccredited}>
-                  <TouchableOpacity
-                    style={[
-                      styles.accreditedToggle,
-                      property.is_accredited && styles.accreditedToggleActive,
-                    ]}
-                    onPress={() => handleToggleAccredited(property)}
-                  >
-                    <ShieldCheck size={14} color={property.is_accredited ? colors.white : colors.gray[400]} />
-                  </TouchableOpacity>
-                </View>
-
-                <Text
-                  style={[
-                    styles.tableCell,
-                    styles.colCoordinates,
-                    !property.latitude && styles.notSetText,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {formatCoords(property.latitude, property.longitude)}
-                </Text>
-                <View style={styles.colActions}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => handleOpenEdit(property)}
-                  >
-                    <MapPin size={14} color={colors.primary} />
-                    <Text style={styles.editButtonText}>Edit Location</Text>
-                  </TouchableOpacity>
-                </View>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Loading properties...</Text>
               </View>
-            ))}
-          </ScrollView>
-        )}
+            ) : properties.length === 0 ? (
+              <Text style={styles.emptyText}>No properties found.</Text>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} style={styles.tableScroll}>
+                {properties.map((property) => (
+                  <View key={property.id} style={styles.tableRow}>
+                    <Text style={[styles.tableCell, styles.colName]} numberOfLines={1}>
+                      {property.name}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colAddress]} numberOfLines={1}>
+                      {property.address || '—'}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colOwner]} numberOfLines={1}>
+                      {property.owner_name || '—'}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colPrice]} numberOfLines={1}>
+                      {formatPrice(property.price)}
+                    </Text>
+                    <View style={styles.colAccredited}>
+                      <TouchableOpacity
+                        style={[
+                          styles.accreditedToggle,
+                          property.is_accredited && styles.accreditedToggleActive,
+                        ]}
+                        onPress={() => handleToggleAccredited(property)}
+                      >
+                        <ShieldCheck size={14} color={property.is_accredited ? colors.white : colors.gray[400]} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.tableCell,
+                        styles.colCoordinates,
+                        !property.latitude && styles.notSetText,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {formatCoords(property.latitude, property.longitude)}
+                    </Text>
+                    <View style={styles.colActions}>
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => handleOpenEdit(property)}
+                      >
+                        <MapPin size={14} color={colors.primary} />
+                        <Text style={styles.editButtonText}>Edit Location</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </ScrollView>
       </View>
 
       {/* Edit Location Modal */}

@@ -35,11 +35,10 @@ export const useAuth = () => {
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      setIsLoading(true);
       setError(null);
-      
+
       const response = await supabaseAuthService.login(credentials);
-      
+
       if (response.success && response.user) {
         setUser(response.user);
         return { success: true };
@@ -51,8 +50,6 @@ export const useAuth = () => {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setIsLoading(false);
     }
   };
 
