@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,6 +22,14 @@ export interface MapMarker {
   isUserLocation?: boolean;
 }
 
+export interface RouteInfo {
+  from: [number, number];
+  to: [number, number];
+  schoolName: string;
+  distance: string;
+  walkingTime: string;
+}
+
 interface MapProps {
   center?: [number, number];
   zoom?: number;
@@ -29,6 +37,7 @@ interface MapProps {
   height?: number | string;
   width?: number | string;
   onMarkerClick?: (marker: MapMarker) => void;
+  routeInfo?: RouteInfo | null;
 }
 
 // Create custom marker icon for properties
@@ -124,6 +133,40 @@ const createUserLocationIcon = () => {
   });
 };
 
+// Create school marker icon
+const createSchoolIcon = () => {
+  const iconHtml = `
+    <div style="
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    ">
+      <div style="
+        background: #4A90E2;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+        border: 3px solid white;
+      ">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z"/>
+        </svg>
+      </div>
+    </div>
+  `;
+
+  return L.divIcon({
+    html: iconHtml,
+    className: 'school-marker-icon',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  });
+};
+
 export const Map: React.FC<MapProps> = ({
   center = [14.5995, 120.9842], // Manila, Philippines default
   zoom = 13,
@@ -131,6 +174,7 @@ export const Map: React.FC<MapProps> = ({
   height = 400,
   width = '100%',
   onMarkerClick,
+  routeInfo,
 }) => {
   return (
     <View style={[styles.container, { height, width }]}>
@@ -145,6 +189,7 @@ export const Map: React.FC<MapProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        {/* Property and user location markers */}
         {markers.map((marker) => {
           const customIcon = marker.isUserLocation
             ? createUserLocationIcon()
@@ -176,6 +221,51 @@ export const Map: React.FC<MapProps> = ({
             </Marker>
           );
         })}
+
+        {/* Route line and school marker when a property is selected */}
+        {routeInfo && (
+          <>
+            {/* Walking route line */}
+            <Polyline
+              positions={[routeInfo.from, routeInfo.to]}
+              pathOptions={{
+                color: '#4A90E2',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '10, 10',
+              }}
+            />
+
+            {/* School marker */}
+            <Marker position={routeInfo.to} icon={createSchoolIcon()}>
+              <Popup>
+                <div style={{ textAlign: 'center' }}>
+                  <strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px', color: '#4A90E2' }}>
+                    {routeInfo.schoolName}
+                  </strong>
+                  <div style={{
+                    display: 'flex',
+                    gap: '16px',
+                    justifyContent: 'center',
+                    marginTop: '8px',
+                    padding: '8px',
+                    background: '#f0f8ff',
+                    borderRadius: '8px'
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>Distance</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#4A90E2' }}>{routeInfo.distance}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#666', marginBottom: '2px' }}>Walking</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#4A90E2' }}>{routeInfo.walkingTime}</div>
+                    </div>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          </>
+        )}
       </MapContainer>
     </View>
   );

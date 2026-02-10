@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, Locate, Navigation } from 'lucide-react-native';
-import { Map, MapMarker } from '../../../components/common';
+import { ArrowLeft, Locate, Navigation, X } from 'lucide-react-native';
+import { Map, MapMarker, RouteInfo } from '../../../components/common';
 import { supabase } from '../../../services/supabase';
 import { colors } from '../../../styles/colors';
 import { isValidCoordinates, DEFAULT_COORDINATES } from '../../../utils/geocoding';
 import { useResponsive } from '../../../hooks/useResponsive';
 import { TenantStackParamList } from '../../../navigation/types';
+import {
+  findNearestUniversity,
+  formatDistance,
+  calculateWalkingTime,
+} from '../../../data/universities';
 
 interface PropertyLocation {
   id: string;
@@ -34,6 +39,7 @@ export const MapViewScreen: React.FC = () => {
   const [mapZoom, setMapZoom] = useState(13);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [mapKey, setMapKey] = useState(0);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
 
   useEffect(() => {
     loadProperties();
@@ -199,8 +205,27 @@ export const MapViewScreen: React.FC = () => {
   };
 
   const handleMarkerClick = (marker: MapMarker) => {
-    console.log('Clicked property:', marker);
-    // TODO: Navigate to property detail
+    // Don't show route for user location marker
+    if (marker.isUserLocation) {
+      return;
+    }
+
+    // Find nearest university and calculate route
+    const { university, distance } = findNearestUniversity(marker.position);
+    const walkingTime = calculateWalkingTime(distance);
+    const formattedDistance = formatDistance(distance);
+
+    setRouteInfo({
+      from: marker.position,
+      to: university.coordinates,
+      schoolName: university.shortName,
+      distance: formattedDistance,
+      walkingTime: walkingTime,
+    });
+  };
+
+  const handleClearRoute = () => {
+    setRouteInfo(null);
   };
 
   const markers: MapMarker[] = [
@@ -298,7 +323,36 @@ export const MapViewScreen: React.FC = () => {
           height="100%"
           width="100%"
           onMarkerClick={handleMarkerClick}
+          routeInfo={routeInfo}
         />
+
+        {/* Route info card */}
+        {routeInfo && (
+          <View style={styles.routeCard}>
+            <View style={styles.routeCardHeader}>
+              <Text style={styles.routeCardTitle}>Walking Route</Text>
+              <TouchableOpacity onPress={handleClearRoute} style={styles.clearRouteButton}>
+                <X size={20} color={colors.gray[600]} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.routeCardBody}>
+              <View style={styles.routeInfoItem}>
+                <Text style={styles.routeInfoLabel}>To</Text>
+                <Text style={styles.routeInfoValue}>{routeInfo.schoolName}</Text>
+              </View>
+              <View style={styles.routeInfoDivider} />
+              <View style={styles.routeInfoItem}>
+                <Text style={styles.routeInfoLabel}>Distance</Text>
+                <Text style={styles.routeInfoValue}>{routeInfo.distance}</Text>
+              </View>
+              <View style={styles.routeInfoDivider} />
+              <View style={styles.routeInfoItem}>
+                <Text style={styles.routeInfoLabel}>Walking Time</Text>
+                <Text style={styles.routeInfoValue}>{routeInfo.walkingTime}</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Location button */}
         <TouchableOpacity
@@ -424,5 +478,62 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.gray[700],
     textAlign: 'center',
+  },
+  routeCard: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 80,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  routeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[200],
+  },
+  routeCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.gray[900],
+  },
+  clearRouteButton: {
+    padding: 4,
+  },
+  routeCardBody: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  routeInfoItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  routeInfoLabel: {
+    fontSize: 11,
+    color: colors.gray[600],
+    marginBottom: 4,
+  },
+  routeInfoValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  routeInfoDivider: {
+    width: 1,
+    backgroundColor: colors.gray[200],
+    marginHorizontal: 12,
   },
 });

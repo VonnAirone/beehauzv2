@@ -14,4 +14,4 @@ export { ResponsiveContainer } from './ResponsiveContainer';
 export { ResponsiveGrid } from './ResponsiveGrid';
 export { DesktopSidebar } from './DesktopSidebar';
 export { Map } from './Map';
-export type { MapMarker } from './Map';
+export type { MapMarker, RouteInfo } from './Map';
