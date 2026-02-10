@@ -10,6 +10,7 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useAuth } from '../hooks/useAuth';
 import { useUserType } from '../context/UserTypeContext';
 import { DesktopSidebar } from '../components/common/DesktopSidebar';
+import { AdminAccessManager } from '../services/adminAccessManager';
 
 const Tab = createBottomTabNavigator<AdminStackParamList>();
 
@@ -51,10 +52,31 @@ export const AdminNavigator: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    clearUserType();
-    // Navigate to Auth screen to ensure we leave the admin route
-    navigation.navigate('Auth' as never);
+    try {
+      // Clear admin session from SecureStore first
+      await AdminAccessManager.clearAdminAccess();
+
+      // Then logout from Supabase (this also calls clearAdminAccess but doing it explicitly first ensures it's cleared)
+      await logout();
+
+      // Clear user type
+      clearUserType();
+
+      // Reset navigation stack to force return to auth screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as never }],
+      });
+    } catch (error) {
+      if (__DEV__) console.error('Logout error:', error);
+
+      // Even if there's an error, try to navigate away
+      clearUserType();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' as never }],
+      });
+    }
   };
 
   return (
