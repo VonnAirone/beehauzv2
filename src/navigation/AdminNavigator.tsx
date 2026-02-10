@@ -62,10 +62,10 @@ export const AdminNavigator: React.FC = () => {
       // Clear user type
       clearUserType();
 
-      // Reset navigation stack to force return to auth screen
+      // Navigate to Admin screen, which will trigger AdminGate to redirect to Auth
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Auth' as never }],
+        routes: [{ name: 'Admin' as never }],
       });
     } catch (error) {
       if (__DEV__) console.error('Logout error:', error);
@@ -74,7 +74,7 @@ export const AdminNavigator: React.FC = () => {
       clearUserType();
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Auth' as never }],
+        routes: [{ name: 'Admin' as never }],
       });
     }
   };

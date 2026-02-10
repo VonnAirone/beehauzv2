@@ -10,16 +10,14 @@ if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
   throw new Error('Missing required environment variables: EXPO_PUBLIC_ADMIN_EMAIL and EXPO_PUBLIC_ADMIN_PASSWORD. Please check your .env file.');
 }
 
-const ADMIN_SESSION_KEY = '@admin_access_granted';
+const ADMIN_SESSION_KEY = 'admin_access_granted';
 
 export class AdminAccessManager {
-  // Check if current login credentials match admin credentials
   static async checkAdminCredentials(email: string, password: string): Promise<boolean> {
     const isAdminEmail = email.toLowerCase() === ADMIN_CREDENTIALS.email?.toLowerCase();
     const isAdminPassword = password === ADMIN_CREDENTIALS.password;
 
     if (isAdminEmail && isAdminPassword) {
-      // Grant admin access for this session (using encrypted storage)
       await SecureStore.setItemAsync(ADMIN_SESSION_KEY, JSON.stringify({
         granted: true,
         timestamp: Date.now(),
