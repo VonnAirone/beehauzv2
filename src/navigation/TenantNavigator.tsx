@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -20,6 +20,7 @@ import { colors } from '../styles/colors';
 import { useResponsive } from '../hooks/useResponsive';
 import { DesktopSidebar } from '../components/common/DesktopSidebar';
 import { useAuthContext } from '../context/AuthContext';
+import { supabase } from '../services/supabase';
 import { AuthPromptModal } from '../components/common/AuthPromptModal';
 import { FeatureType } from '../utils/guestAccess';
 
@@ -30,8 +31,25 @@ const TenantTabs: React.FC = () => {
   const { isDesktop, isWeb } = useResponsive();
   const [activeTab, setActiveTab] = useState<string>('Search');
   const navigation = useNavigation<StackNavigationProp<TenantStackParamList>>();
-  const { isAuthenticated } = useAuthContext();
-  
+  const { isAuthenticated, user } = useAuthContext();
+  const [hasBookingUpdates, setHasBookingUpdates] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    const checkUpdates = async () => {
+      const { count } = await supabase
+        .from('booking_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('requester_id', user.id)
+        .in('status', ['accepted', 'rejected']);
+
+      setHasBookingUpdates((count ?? 0) > 0);
+    };
+
+    checkUpdates();
+  }, [isAuthenticated, user?.id]);
+
   // Auth prompt modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authFeature, setAuthFeature] = useState<FeatureType>('access_bookings');
@@ -148,7 +166,10 @@ const TenantTabs: React.FC = () => {
                 return;
               }
               
-              if (routeName) setActiveTab(routeName);
+              if (routeName) {
+                setActiveTab(routeName);
+                if (routeName === 'MyBookings') setHasBookingUpdates(false);
+              }
             },
           }}
         >
@@ -172,17 +193,26 @@ const TenantTabs: React.FC = () => {
               ),
             }}
           />
-          {/* <Tab.Screen 
-            name="MyBookings" 
+          <Tab.Screen
+            name="MyBookings"
             component={MyBookingsScreen}
             options={{
               tabBarLabel: 'Bookings',
               tabBarIcon: ({ color, size }) => (
                 <Calendar color={color} size={size} />
               ),
+              tabBarBadge: hasBookingUpdates ? '' : undefined,
+              tabBarBadgeStyle: hasBookingUpdates ? {
+                backgroundColor: '#EF4444',
+                minWidth: 10,
+                maxHeight: 10,
+                borderRadius: 5,
+                fontSize: 0,
+                top: 2,
+              } : undefined,
             }}
           />
-          <Tab.Screen 
+          {/* <Tab.Screen 
             name="Notifications" 
             component={NotificationsScreen}
             options={{

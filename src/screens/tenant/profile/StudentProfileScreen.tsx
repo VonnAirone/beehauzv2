@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensio
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { ArrowLeft, GraduationCap, MapPin, Phone, Mail, Heart, Calendar, Edit3 } from 'lucide-react-native';
+import { ArrowLeft, GraduationCap, MapPin, Phone, Mail, Heart, Calendar, Edit3, Pen } from 'lucide-react-native';
 import { Button, Card } from '../../../components/common';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useFavorites } from '../../../context/FavoritesContext';
@@ -57,15 +57,10 @@ export const StudentProfileScreen: React.FC = () => {
       }]}  edges={['top']}>
         
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.navigate('TenantTabs', { screen: 'Search' })}
-        >
-          <ArrowLeft size={22} color={colors.gray[700]} />
-        </TouchableOpacity>
-        <Text style={[typography.textStyles.h3, styles.headerTitle]}>Profile</Text>
+        <Text style={[typography.textStyles.h3, styles.headerTitle]}>My Profile</Text>
         <TouchableOpacity style={styles.editIconButton} onPress={handleEditProfile}>
-            <Edit3 size={18} color={colors.white} />
+            <Pen size={18} color={colors.white} />
+            <Text style={[typography.textStyles.button, {color: colors.white}]}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -204,7 +199,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 20
   },
   backButton: {
     padding: 6,
@@ -212,9 +208,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.gray[900],
     fontFamily: 'Figtree_600SemiBold',
-  },
-  headerSpacer: {
-    width: 28,
   },
   content: {
     gap: 5,
@@ -231,10 +224,11 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   editIconButton: {
-    width: 32,
     height: 32,
-    borderRadius: 5,
+    borderRadius: 10,
+    padding: 15,
     backgroundColor: colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -312,8 +306,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   sectionCardFull: {
-    width: '100%',
-    flexBasis: '100%',
+    flex: undefined,
   },
   sectionTitle: {
     color: colors.gray[900],

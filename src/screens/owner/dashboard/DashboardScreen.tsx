@@ -5,7 +5,7 @@ import { colors } from '../../../styles/colors';
 import { supabase } from '../../../services/supabase';
 import { useAuthContext } from '../../../context/AuthContext';
 import { Input } from '../../../components/common';
-import { Plus } from 'lucide-react-native';
+import { Plus, User, Clock, Home, X, CheckCircle, XCircle } from 'lucide-react-native';
 
 export const OwnerDashboardScreen: React.FC = () => {
   const { user } = useAuthContext();
@@ -180,9 +180,26 @@ export const OwnerDashboardScreen: React.FC = () => {
     id: string;
     title: string;
     body: string | null;
+    related_request_id: string | null;
     created_at: string;
   }>>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = React.useState(false);
+
+  const [bookingDetailVisible, setBookingDetailVisible] = React.useState(false);
+  const [bookingDetail, setBookingDetail] = React.useState<{
+    requestId: string;
+    requesterName: string;
+    requesterEmail: string | null;
+    requesterPhone: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    headsCount: number | null;
+    status: string;
+    createdAt: string;
+    history: Array<{ propertyName: string; dateStarted: string; dateLeft: string | null; status: string }>;
+  } | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = React.useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
 
   const formatTimeAgo = (value: string) => {
     const now = new Date();
@@ -207,7 +224,7 @@ export const OwnerDashboardScreen: React.FC = () => {
       try {
         const { data } = await supabase
           .from('owner_notifications')
-          .select('id, title, body, created_at')
+          .select('id, title, body, related_request_id, created_at')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -231,7 +248,7 @@ export const OwnerDashboardScreen: React.FC = () => {
           filter: `owner_id=eq.${user.id}`,
         },
         (payload) => {
-          const next = payload.new as { id: string; title: string; body: string | null; created_at: string };
+          const next = payload.new as { id: string; title: string; body: string | null; related_request_id: string | null; created_at: string };
           setNotifications((prev) => [next, ...prev]);
         }
       )
@@ -242,6 +259,104 @@ export const OwnerDashboardScreen: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
+
+  const handleNotificationPress = async (notification: typeof notifications[0]) => {
+    if (!notification.related_request_id) return;
+
+    setBookingDetailVisible(true);
+    setBookingDetail(null);
+    setIsLoadingDetail(true);
+
+    try {
+      const { data: request } = await supabase
+        .from('booking_requests')
+        .select('id, requester_id, requester_name, start_date, end_date, heads_count, status, created_at')
+        .eq('id', notification.related_request_id)
+        .maybeSingle();
+
+      if (!request) {
+        setIsLoadingDetail(false);
+        return;
+      }
+
+      let requesterEmail: string | null = null;
+      let requesterPhone: string | null = null;
+
+      if (request.requester_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('email, full_name, phone')
+          .eq('id', request.requester_id)
+          .maybeSingle();
+
+        if (profile) {
+          requesterEmail = profile.email || null;
+          requesterPhone = profile.phone || null;
+        }
+      }
+
+      let history: Array<{ propertyName: string; dateStarted: string; dateLeft: string | null; status: string }> = [];
+
+      if (request.requester_id) {
+        const { data: tenantRecords } = await supabase
+          .from('tenants')
+          .select('date_started, date_left, status, properties:property_id(name)')
+          .eq('user_id', request.requester_id)
+          .order('date_started', { ascending: false });
+
+        if (tenantRecords) {
+          history = tenantRecords.map((record: any) => ({
+            propertyName: record.properties?.name || 'Unknown property',
+            dateStarted: record.date_started,
+            dateLeft: record.date_left,
+            status: record.status,
+          }));
+        }
+      }
+
+      setBookingDetail({
+        requestId: request.id,
+        requesterName: request.requester_name,
+        requesterEmail,
+        requesterPhone,
+        startDate: request.start_date,
+        endDate: request.end_date,
+        headsCount: request.heads_count,
+        status: request.status,
+        createdAt: request.created_at,
+        history,
+      });
+    } finally {
+      setIsLoadingDetail(false);
+    }
+  };
+
+  const handleUpdateBookingStatus = async (status: 'accepted' | 'rejected') => {
+    if (!bookingDetail) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('booking_requests')
+        .update({ status })
+        .eq('id', bookingDetail.requestId);
+
+      if (error) {
+        Alert.alert('Error', 'Failed to update booking status. Please try again.');
+        return;
+      }
+
+      setBookingDetail((prev) => prev ? { ...prev, status } : null);
+      Alert.alert(
+        status === 'accepted' ? 'Booking Accepted' : 'Booking Rejected',
+        status === 'accepted'
+          ? `You have accepted the booking request from ${bookingDetail.requesterName}.`
+          : `You have rejected the booking request from ${bookingDetail.requesterName}.`
+      );
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -337,13 +452,19 @@ export const OwnerDashboardScreen: React.FC = () => {
               <Text style={styles.notificationEmpty}>No notifications yet.</Text>
             )}
             {!isLoadingNotifications && notifications.map((note) => (
-              <View key={note.id} style={styles.notificationItem}>
+              <TouchableOpacity
+                key={note.id}
+                style={[styles.notificationItem, note.related_request_id && styles.notificationClickable]}
+                onPress={() => handleNotificationPress(note)}
+                disabled={!note.related_request_id}
+                activeOpacity={0.7}
+              >
                 <View style={styles.notificationText}>
                   <Text style={styles.notificationTitle}>{note.title}</Text>
                   {!!note.body && <Text style={styles.notificationSubtitle}>{note.body}</Text>}
                 </View>
                 <Text style={styles.notificationTime}>{formatTimeAgo(note.created_at)}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -389,6 +510,157 @@ export const OwnerDashboardScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={bookingDetailVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBookingDetailVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, styles.detailModalCard]}>
+            <View style={styles.detailHeader}>
+              <Text style={styles.modalTitle}>Booking Request</Text>
+              <TouchableOpacity onPress={() => setBookingDetailVisible(false)}>
+                <X size={20} color={colors.gray[500]} />
+              </TouchableOpacity>
+            </View>
+
+            {isLoadingDetail && (
+              <Text style={styles.detailLoading}>Loading details...</Text>
+            )}
+
+            {!isLoadingDetail && !bookingDetail && (
+              <Text style={styles.detailLoading}>Unable to load booking details.</Text>
+            )}
+
+            {!isLoadingDetail && bookingDetail && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Tenant Profile */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailSectionHeader}>
+                    <User size={16} color={colors.primary} />
+                    <Text style={styles.detailSectionTitle}>Tenant Profile</Text>
+                  </View>
+                  <View style={styles.detailProfileCard}>
+                    <View style={styles.detailAvatar}>
+                      <Text style={styles.detailAvatarText}>
+                        {bookingDetail.requesterName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </Text>
+                    </View>
+                    <View style={styles.detailProfileInfo}>
+                      <Text style={styles.detailName}>{bookingDetail.requesterName}</Text>
+                      {bookingDetail.requesterEmail && (
+                        <Text style={styles.detailSubInfo}>{bookingDetail.requesterEmail}</Text>
+                      )}
+                      {bookingDetail.requesterPhone && (
+                        <Text style={styles.detailSubInfo}>{bookingDetail.requesterPhone}</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Booking Info */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailSectionHeader}>
+                    <Clock size={16} color={colors.primary} />
+                    <Text style={styles.detailSectionTitle}>Booking Details</Text>
+                  </View>
+                  <View style={styles.detailGrid}>
+                    <View style={styles.detailGridItem}>
+                      <Text style={styles.detailLabel}>Start Date</Text>
+                      <Text style={styles.detailValue}>{bookingDetail.startDate || 'Not specified'}</Text>
+                    </View>
+                    <View style={styles.detailGridItem}>
+                      <Text style={styles.detailLabel}>End Date</Text>
+                      <Text style={styles.detailValue}>{bookingDetail.endDate || 'Not specified'}</Text>
+                    </View>
+                    <View style={styles.detailGridItem}>
+                      <Text style={styles.detailLabel}>No. of Heads</Text>
+                      <Text style={styles.detailValue}>{bookingDetail.headsCount ?? 'Not specified'}</Text>
+                    </View>
+                    <View style={styles.detailGridItem}>
+                      <Text style={styles.detailLabel}>Status</Text>
+                      <Text style={[
+                        styles.detailStatusBadge,
+                        bookingDetail.status === 'new' && styles.detailStatusNew,
+                        bookingDetail.status === 'accepted' && styles.detailStatusAccepted,
+                        bookingDetail.status === 'rejected' && styles.detailStatusRejected,
+                      ]}>
+                        {bookingDetail.status.charAt(0).toUpperCase() + bookingDetail.status.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Tenant History */}
+                <View style={styles.detailSection}>
+                  <View style={styles.detailSectionHeader}>
+                    <Home size={16} color={colors.primary} />
+                    <Text style={styles.detailSectionTitle}>Property History</Text>
+                  </View>
+                  {bookingDetail.history.length === 0 ? (
+                    <Text style={styles.detailEmptyHistory}>No previous property records found.</Text>
+                  ) : (
+                    bookingDetail.history.map((record, index) => (
+                      <View key={index} style={styles.detailHistoryItem}>
+                        <View style={styles.detailHistoryDot} />
+                        <View style={styles.detailHistoryContent}>
+                          <Text style={styles.detailHistoryName}>{record.propertyName}</Text>
+                          <Text style={styles.detailHistoryDate}>
+                            {record.dateStarted} — {record.dateLeft || 'Present'}
+                          </Text>
+                        </View>
+                        <Text style={[
+                          styles.detailHistoryStatus,
+                          record.status === 'active' && { color: '#0F8A5F' },
+                          record.status === 'left' && { color: colors.gray[500] },
+                        ]}>
+                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+
+                {/* Accept / Reject Buttons */}
+                {bookingDetail.status === 'new' && (
+                  <View style={styles.detailActions}>
+                    <TouchableOpacity
+                      style={[styles.detailActionButton, styles.detailRejectButton]}
+                      onPress={() => handleUpdateBookingStatus('rejected')}
+                      disabled={isUpdatingStatus}
+                    >
+                      <XCircle size={18} color="#B42318" />
+                      <Text style={styles.detailRejectText}>
+                        {isUpdatingStatus ? 'Updating...' : 'Reject'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.detailActionButton, styles.detailAcceptButton]}
+                      onPress={() => handleUpdateBookingStatus('accepted')}
+                      disabled={isUpdatingStatus}
+                    >
+                      <CheckCircle size={18} color={colors.white} />
+                      <Text style={styles.detailAcceptText}>
+                        {isUpdatingStatus ? 'Updating...' : 'Accept'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {bookingDetail.status !== 'new' && (
+                  <View style={styles.detailStatusMessage}>
+                    <Text style={styles.detailStatusMessageText}>
+                      This request has been {bookingDetail.status}.
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -646,5 +918,201 @@ const styles = StyleSheet.create({
   modalPrimaryText: {
     color: colors.white,
     fontWeight: '600',
+  },
+  notificationClickable: {
+    backgroundColor: colors.primary + '08',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
+  },
+  detailModalCard: {
+    maxWidth: 480,
+    maxHeight: '80%',
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  detailLoading: {
+    color: colors.gray[500],
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 24,
+  },
+  detailSection: {
+    marginBottom: 20,
+  },
+  detailSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.gray[900],
+  },
+  detailProfileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.gray[50],
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  detailAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailAvatarText: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  detailProfileInfo: {
+    flex: 1,
+  },
+  detailName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.gray[900],
+    marginBottom: 2,
+  },
+  detailSubInfo: {
+    fontSize: 12,
+    color: colors.gray[600],
+  },
+  detailGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  detailGridItem: {
+    width: '48%',
+    backgroundColor: colors.gray[50],
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  detailLabel: {
+    fontSize: 11,
+    color: colors.gray[500],
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.gray[900],
+  },
+  detailStatusBadge: {
+    fontSize: 13,
+    fontWeight: '600',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  detailStatusNew: {
+    backgroundColor: '#FFF6E5',
+    color: '#9A6B00',
+  },
+  detailStatusAccepted: {
+    backgroundColor: '#E7F7EF',
+    color: '#0F8A5F',
+  },
+  detailStatusRejected: {
+    backgroundColor: '#FDECEC',
+    color: '#B42318',
+  },
+  detailEmptyHistory: {
+    fontSize: 13,
+    color: colors.gray[500],
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  detailHistoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
+  },
+  detailHistoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  detailHistoryContent: {
+    flex: 1,
+  },
+  detailHistoryName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.gray[900],
+  },
+  detailHistoryDate: {
+    fontSize: 11,
+    color: colors.gray[500],
+  },
+  detailHistoryStatus: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  detailActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  detailActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  detailRejectButton: {
+    backgroundColor: '#FDECEC',
+    borderWidth: 1,
+    borderColor: '#F9C5C5',
+  },
+  detailAcceptButton: {
+    backgroundColor: colors.primary,
+  },
+  detailRejectText: {
+    color: '#B42318',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  detailAcceptText: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  detailStatusMessage: {
+    backgroundColor: colors.gray[50],
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  detailStatusMessageText: {
+    fontSize: 13,
+    color: colors.gray[600],
+    fontWeight: '500',
   },
 });

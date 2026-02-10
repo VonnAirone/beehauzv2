@@ -46,6 +46,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
   const [bookingAccepted, setBookingAccepted] = React.useState(false);
   const [bookingError, setBookingError] = React.useState<string | null>(null);
   const [isSubmittingBooking, setIsSubmittingBooking] = React.useState(false);
+  const [pendingBooking, setPendingBooking] = React.useState<{ propertyName: string } | null>(null);
   const { width: windowWidth } = useWindowDimensions();
   const isSmallScreen = windowWidth < 768;
   const isWeb = Platform.OS === 'web';
@@ -59,6 +60,32 @@ export const BoardingHouseDetailScreen: React.FC = () => {
 
     return `₱${value.toLocaleString()}`;
   };
+
+  const checkPendingBooking = React.useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
+      setPendingBooking(null);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('booking_requests')
+      .select('id, properties:property_id(name)')
+      .eq('requester_id', user.id)
+      .eq('status', 'new')
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      const propertyName = (data.properties as any)?.name || 'a property';
+      setPendingBooking({ propertyName });
+    } else {
+      setPendingBooking(null);
+    }
+  }, [isAuthenticated, user?.id]);
+
+  React.useEffect(() => {
+    checkPendingBooking();
+  }, [checkPendingBooking]);
 
   // Track property view for guests (disabled during beta testing) and rating system
   React.useEffect(() => {
@@ -186,6 +213,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
       setBookingEndDate('');
       setBookingHeads('');
       setBookingAccepted(false);
+      checkPendingBooking();
       Alert.alert(
         'Booking Request Sent',
         'Your booking request has been submitted. The property owner will contact you soon.'
@@ -407,13 +435,14 @@ export const BoardingHouseDetailScreen: React.FC = () => {
         {/* Basic Info */}
         <View style={styles.infoSection}>
           <View>
-            <Text style={[typography.textStyles.h2, styles.propertyName]}>{boardingHouse.name}</Text>
-            {boardingHouse.isAccredited && (
+              {boardingHouse.isAccredited && (
               <View style={styles.accreditedBadge}>
                 <GraduationCap size={14} color={colors.white} />
                 <Text style={styles.accreditedBadgeText}>University Accredited</Text>
               </View>
             )}
+            <Text style={[typography.textStyles.h2, styles.propertyName]}>{boardingHouse.name}</Text>
+
             <TouchableOpacity
               style={styles.locationRow}
               onPress={() => {
@@ -591,7 +620,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
                   </View>
                 </View>
                 <Text style={[typography.textStyles.bodySmall, styles.ownerJoined]}>
-                  Joined March 2023
+                  Joined {new Date(boardingHouse.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </Text>
               </View>
             </View>
@@ -669,18 +698,26 @@ export const BoardingHouseDetailScreen: React.FC = () => {
 
       {/* Fixed Book Now Button */}
       <SafeAreaView edges={['bottom']} style={styles.bookingContainer}>
-        <View style={styles.bookingContent}>
-          <View style={styles.priceContainer}>
-            <Text style={styles.bookingPrice}>{formatCurrency(boardingHouse.ratePerMonth)}</Text>
-            <Text style={styles.bookingPeriod}>/month</Text>
+        {pendingBooking ? (
+          <View style={styles.pendingBookingBar}>
+            <Info size={16} color={colors.gray[600]} />
+            <Text style={styles.pendingBookingText}>
+              You have a pending booking request for {pendingBooking.propertyName}.
+            </Text>
           </View>
-          <Button
-            disabled
-            title="Book Now"
-            onPress={handleBookNow}
-            style={styles.bookButton}
-          />
-        </View>
+        ) : (
+          <View style={styles.bookingContent}>
+            <View style={styles.priceContainer}>
+              <Text style={styles.bookingPrice}>{formatCurrency(boardingHouse.ratePerMonth)}</Text>
+              <Text style={styles.bookingPeriod}>/month</Text>
+            </View>
+            <Button
+              title="Book Now"
+              onPress={handleBookNow}
+              style={styles.bookButton}
+            />
+          </View>
+        )}
       </SafeAreaView>
 
       <Modal
@@ -1741,5 +1778,18 @@ const styles = StyleSheet.create({
   moreReviewsSubtext: {
     color: colors.text.secondary,
     fontSize: 14,
+  },
+  pendingBookingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  pendingBookingText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Figtree_500Medium',
+    color: colors.gray[600],
   },
 });

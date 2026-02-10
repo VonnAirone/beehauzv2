@@ -384,14 +384,6 @@ export const MapViewScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
-
-      {properties.length > 0 && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            Showing {properties.length} {properties.length === 1 ? 'property' : 'properties'}
-          </Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -428,7 +420,7 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     position: 'absolute',
-    top: 20,
+    bottom: 20,
     right: 20,
     width: 50,
     height: 50,
@@ -444,6 +436,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    zIndex: 1000,
   },
   loadingContainer: {
     flex: 1,
@@ -497,12 +490,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   routeCard: {
+    width: 'auto',
     position: 'absolute',
     top: 20,
     left: 20,
-    right: 80,
     backgroundColor: colors.white,
     borderRadius: 12,
+    zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -547,6 +541,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
+    textAlign: 'center'
   },
   routeInfoDivider: {
     width: 1,
