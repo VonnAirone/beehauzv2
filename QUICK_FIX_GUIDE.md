@@ -49,31 +49,41 @@ git push origin --force --tags
 
 ```bash
 # For PRODUCTION
-eas env:create EXPO_PUBLIC_SUPABASE_URL \
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL \
   --value "https://fqjmdvvbikawuacolpyu.supabase.co" \
-  --environment production
+  --environment production \
+  --visibility plaintext
 
-eas env:create EXPO_PUBLIC_SUPABASE_ANON_KEY \
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY \
   --value "YOUR_NEW_ANON_KEY" \
-  --environment production
+  --environment production \
+  --visibility plaintext
 
-eas env:create EXPO_PUBLIC_ADMIN_EMAIL \
+eas env:create --name EXPO_PUBLIC_ADMIN_EMAIL \
   --value "admin@beehauz.com" \
-  --environment production
+  --environment production \
+  --visibility plaintext
 
-eas env:create EXPO_PUBLIC_ADMIN_PASSWORD \
+eas env:create --name EXPO_PUBLIC_ADMIN_PASSWORD \
   --value "YOUR_NEW_PASSWORD" \
-  --environment production
+  --environment production \
+  --visibility plaintext
 
-eas env:create EXPO_PUBLIC_ADMIN_USERNAME \
+eas env:create --name EXPO_PUBLIC_ADMIN_USERNAME \
   --value "beehauz_admin" \
-  --environment production
+  --environment production \
+  --visibility plaintext
 
-eas env:create EXPO_PUBLIC_ADMIN_ACCESS_CODE \
+eas env:create --name EXPO_PUBLIC_ADMIN_ACCESS_CODE \
   --value "YOUR_NEW_CODE" \
-  --environment production
+  --environment production \
+  --visibility plaintext
 
 # Repeat same commands with --environment preview
+
+# OR use the automated script:
+# 1. Edit setup-eas-env.sh with your rotated credentials
+# 2. Run: ./setup-eas-env.sh
 ```
 
 ### **Step 4: Verify**
