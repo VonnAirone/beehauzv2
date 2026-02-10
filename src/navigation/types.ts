@@ -46,7 +46,11 @@ export type TenantTabParamList = {
 export type TenantStackParamList = {
   TenantTabs: NavigatorScreenParams<TenantTabParamList> | undefined;
   Filter: undefined;
-  MapView: undefined;
+  MapView: {
+    focusedPropertyId?: string;
+    focusedPropertyName?: string;
+    focusedPropertyAddress?: string;
+  } | undefined;
   BoardingHousesList: undefined;
   BoardingHouseDetail: { boardingHouse: BoardingHouse };
   BlogDetail: { blog: BlogPost };

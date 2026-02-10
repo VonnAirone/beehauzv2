@@ -408,10 +408,23 @@ export const BoardingHouseDetailScreen: React.FC = () => {
         <View style={styles.infoSection}>
           <View>
             <Text style={[typography.textStyles.h2, styles.propertyName]}>{boardingHouse.name}</Text>
-            <View style={styles.locationRow}>
-              <MapPin size={16} color={colors.gray[600]} />
-              <Text style={[typography.textStyles.body, styles.location]}>{boardingHouse.location}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.locationRow}
+              onPress={() => {
+                const propertyId = (boardingHouse as any).property_id || boardingHouse.id;
+                navigation.navigate('MapView', {
+                  focusedPropertyId: propertyId,
+                  focusedPropertyName: boardingHouse.name,
+                  focusedPropertyAddress: boardingHouse.location,
+                });
+              }}
+              activeOpacity={0.7}
+            >
+              <MapPin size={16} color={colors.primary} />
+              <Text style={[typography.textStyles.body, styles.location, styles.locationLink]}>
+                {boardingHouse.location}
+              </Text>
+            </TouchableOpacity>
           </View>
 
 
@@ -1043,6 +1056,10 @@ const styles = StyleSheet.create({
   location: {
     fontSize: 12,
     color: colors.gray[600],
+  },
+  locationLink: {
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
   price: {
     color: colors.primary,

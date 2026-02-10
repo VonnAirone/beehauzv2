@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, Locate, Navigation } from 'lucide-react-native';
 import { Map, MapMarker } from '../../../components/common';
 import { supabase } from '../../../services/supabase';
 import { colors } from '../../../styles/colors';
 import { isValidCoordinates, DEFAULT_COORDINATES } from '../../../utils/geocoding';
 import { useResponsive } from '../../../hooks/useResponsive';
+import { TenantStackParamList } from '../../../navigation/types';
 
 interface PropertyLocation {
   id: string;
@@ -16,8 +17,12 @@ interface PropertyLocation {
   longitude?: number | null;
 }
 
+type MapViewRouteProp = RouteProp<TenantStackParamList, 'MapView'>;
+
 export const MapViewScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<MapViewRouteProp>();
+  const { focusedPropertyId, focusedPropertyName, focusedPropertyAddress } = route.params || {};
   const { isMobile } = useResponsive();
   const [properties, setProperties] = useState<PropertyLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,6 +37,18 @@ export const MapViewScreen: React.FC = () => {
     loadProperties();
     requestLocationPermission();
   }, []);
+
+  // Auto-focus on property if focusedPropertyId is provided
+  useEffect(() => {
+    if (focusedPropertyId && properties.length > 0) {
+      const focusedProperty = properties.find(p => p.id === focusedPropertyId);
+      if (focusedProperty && isValidCoordinates(focusedProperty.latitude, focusedProperty.longitude)) {
+        setMapCenter([focusedProperty.latitude!, focusedProperty.longitude!]);
+        setMapZoom(16);
+        setMapKey(prev => prev + 1);
+      }
+    }
+  }, [focusedPropertyId, properties]);
 
   const requestLocationPermission = async () => {
     try {
