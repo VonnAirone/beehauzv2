@@ -10,9 +10,13 @@ import { useResponsive } from '../../../hooks/useResponsive';
 import { TenantStackParamList } from '../../../navigation/types';
 import {
   findNearestUniversity,
-  formatDistance,
-  calculateWalkingTime,
+  formatDistance as formatDistanceSimple,
 } from '../../../data/universities';
+import {
+  getWalkingRoute,
+  formatRouteDistance,
+  formatRouteDuration,
+} from '../../../services/routingService';
 
 interface PropertyLocation {
   id: string;
@@ -204,24 +208,37 @@ export const MapViewScreen: React.FC = () => {
     }
   };
 
-  const handleMarkerClick = (marker: MapMarker) => {
+  const handleMarkerClick = async (marker: MapMarker) => {
     // Don't show route for user location marker
     if (marker.isUserLocation) {
       return;
     }
 
-    // Find nearest university and calculate route
-    const { university, distance } = findNearestUniversity(marker.position);
-    const walkingTime = calculateWalkingTime(distance);
-    const formattedDistance = formatDistance(distance);
+    // Find nearest university
+    const { university } = findNearestUniversity(marker.position);
 
-    setRouteInfo({
-      from: marker.position,
-      to: university.coordinates,
-      schoolName: university.shortName,
-      distance: formattedDistance,
-      walkingTime: walkingTime,
-    });
+    // Get actual walking route from OSRM
+    const route = await getWalkingRoute(marker.position, university.coordinates);
+
+    if (route) {
+      // Use actual route data from OSRM
+      setRouteInfo({
+        coordinates: route.coordinates,
+        schoolPosition: university.coordinates,
+        schoolName: university.shortName,
+        distance: formatRouteDistance(route.distance),
+        walkingTime: formatRouteDuration(route.duration),
+      });
+    } else {
+      // Fallback to straight line if routing fails
+      setRouteInfo({
+        coordinates: [marker.position, university.coordinates],
+        schoolPosition: university.coordinates,
+        schoolName: university.shortName,
+        distance: 'Route unavailable',
+        walkingTime: 'N/A',
+      });
+    }
   };
 
   const handleClearRoute = () => {

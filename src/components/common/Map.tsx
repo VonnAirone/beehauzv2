@@ -23,8 +23,8 @@ export interface MapMarker {
 }
 
 export interface RouteInfo {
-  from: [number, number];
-  to: [number, number];
+  coordinates: [number, number][]; // Array of points forming the route
+  schoolPosition: [number, number]; // School location for marker
   schoolName: string;
   distance: string;
   walkingTime: string;
@@ -225,19 +225,20 @@ export const Map: React.FC<MapProps> = ({
         {/* Route line and school marker when a property is selected */}
         {routeInfo && (
           <>
-            {/* Walking route line */}
+            {/* Walking route line following roads */}
             <Polyline
-              positions={[routeInfo.from, routeInfo.to]}
+              positions={routeInfo.coordinates}
               pathOptions={{
                 color: '#4A90E2',
-                weight: 3,
-                opacity: 0.7,
-                dashArray: '10, 10',
+                weight: 4,
+                opacity: 0.8,
+                lineJoin: 'round',
+                lineCap: 'round',
               }}
             />
 
             {/* School marker */}
-            <Marker position={routeInfo.to} icon={createSchoolIcon()}>
+            <Marker position={routeInfo.schoolPosition} icon={createSchoolIcon()}>
               <Popup>
                 <div style={{ textAlign: 'center' }}>
                   <strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px', color: '#4A90E2' }}>
