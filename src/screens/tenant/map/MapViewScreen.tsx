@@ -15,6 +15,8 @@ interface PropertyLocation {
   address: string;
   latitude?: number | null;
   longitude?: number | null;
+  image_url?: string | null;
+  price?: number | null;
 }
 
 type MapViewRouteProp = RouteProp<TenantStackParamList, 'MapView'>;
@@ -44,7 +46,7 @@ export const MapViewScreen: React.FC = () => {
       const focusedProperty = properties.find(p => p.id === focusedPropertyId);
       if (focusedProperty && isValidCoordinates(focusedProperty.latitude, focusedProperty.longitude)) {
         setMapCenter([focusedProperty.latitude!, focusedProperty.longitude!]);
-        setMapZoom(16);
+        setMapZoom(400);
         setMapKey(prev => prev + 1);
       }
     }
@@ -131,10 +133,10 @@ export const MapViewScreen: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Fetch properties with coordinates
+      // Fetch properties with coordinates, images, and prices
       const { data, error } = await supabase
         .from('properties')
-        .select('id, name, address, latitude, longitude')
+        .select('id, name, address, latitude, longitude, image_url, price')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -209,6 +211,9 @@ export const MapViewScreen: React.FC = () => {
         position: [property.latitude!, property.longitude!] as [number, number],
         title: property.name,
         description: property.address || 'Address not provided',
+        imageUrl: property.image_url || undefined,
+        price: property.price ? `₱${property.price.toLocaleString()}/mo` : undefined,
+        isUserLocation: false,
       })),
     ...(userLocation
       ? [{
@@ -216,6 +221,7 @@ export const MapViewScreen: React.FC = () => {
           position: userLocation,
           title: 'Your Location',
           description: 'You are here',
+          isUserLocation: true,
         }]
       : []),
   ];
