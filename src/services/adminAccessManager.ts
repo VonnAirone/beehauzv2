@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 // Admin credentials - Load from environment variables (.env file)
 const ADMIN_CREDENTIALS = {
@@ -12,13 +13,40 @@ if (!ADMIN_CREDENTIALS.email || !ADMIN_CREDENTIALS.password) {
 
 const ADMIN_SESSION_KEY = 'admin_access_granted';
 
+// Platform-agnostic storage helpers
+const storage = {
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(key, value);
+    } else {
+      await SecureStore.setItemAsync(key, value);
+    }
+  },
+
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(key);
+    } else {
+      return await SecureStore.getItemAsync(key);
+    }
+  },
+
+  async deleteItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(key);
+    } else {
+      await SecureStore.deleteItemAsync(key);
+    }
+  }
+};
+
 export class AdminAccessManager {
   static async checkAdminCredentials(email: string, password: string): Promise<boolean> {
     const isAdminEmail = email.toLowerCase() === ADMIN_CREDENTIALS.email?.toLowerCase();
     const isAdminPassword = password === ADMIN_CREDENTIALS.password;
 
     if (isAdminEmail && isAdminPassword) {
-      await SecureStore.setItemAsync(ADMIN_SESSION_KEY, JSON.stringify({
+      await storage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
         granted: true,
         timestamp: Date.now(),
         email: email
@@ -32,7 +60,7 @@ export class AdminAccessManager {
   // Check if admin access is granted for current session
   static async isAdminAccessGranted(): Promise<boolean> {
     try {
-      const adminSession = await SecureStore.getItemAsync(ADMIN_SESSION_KEY);
+      const adminSession = await storage.getItem(ADMIN_SESSION_KEY);
       if (!adminSession) return false;
 
       const session = JSON.parse(adminSession);
@@ -45,13 +73,18 @@ export class AdminAccessManager {
 
   // Clear admin access (on logout)
   static async clearAdminAccess(): Promise<void> {
-    await SecureStore.deleteItemAsync(ADMIN_SESSION_KEY);
+    try {
+      await storage.deleteItem(ADMIN_SESSION_KEY);
+    } catch (error) {
+      // Silently fail if storage operation fails
+      if (__DEV__) console.warn('Failed to clear admin access:', error);
+    }
   }
 
   // Get admin session info
   static async getAdminSession(): Promise<{ email: string; timestamp: number } | null> {
     try {
-      const adminSession = await SecureStore.getItemAsync(ADMIN_SESSION_KEY);
+      const adminSession = await storage.getItem(ADMIN_SESSION_KEY);
       if (!adminSession) return null;
 
       const session = JSON.parse(adminSession);
