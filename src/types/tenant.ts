@@ -47,6 +47,7 @@ export interface BoardingHouse {
   capacity?: number; // Total bed capacity
   rules?: string[];
   nearbyLandmarks?: string[];
+  isAccredited?: boolean;
   createdAt: string;
   updatedAt: string;
 }

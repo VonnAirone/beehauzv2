@@ -21,6 +21,7 @@ import { useUserType } from '../../../context/UserTypeContext';
 import { GuestViewProgressBanner, AuthPromptModal } from '../../../components/common';
 import { FeatureType, BETA_TESTING_MODE } from '../../../utils/guestAccess';
 import { POPULAR_SCHOOLS } from '../../../utils/constants';
+import { calculateDistance } from '../../../data/universities';
 import { useServiceSurvey } from '../../../hooks/tenant/useServiceSurvey';
 import { useAppRating } from '../../../context/AppRatingContext';
 
@@ -102,7 +103,7 @@ export const SearchScreen: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('properties')
-          .select('id, owner_id, name, address, description, created_at, owner:profiles(full_name, email)')
+          .select('id, owner_id, name, address, description, latitude, longitude, is_accredited, created_at, owner:profiles(full_name, email)')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -135,6 +136,9 @@ export const SearchScreen: React.FC = () => {
             isAvailable: true,
             createdAt: row.created_at,
             updatedAt: row.created_at,
+            latitude: row.latitude ? Number(row.latitude) : null,
+            longitude: row.longitude ? Number(row.longitude) : null,
+            isAccredited: row.is_accredited === true,
           } as BoardingHouse;
         });
 
@@ -165,12 +169,22 @@ export const SearchScreen: React.FC = () => {
                                   property.location.toLowerCase().includes(searchText.toLowerCase()) ||
                                   property.description.toLowerCase().includes(searchText.toLowerCase());
       
-      // School/Location filter
-      const meetsSchoolCriteria = selectedSchool === '' || 
-                                  property.location.toLowerCase().includes(selectedSchool.toLowerCase()) ||
-                                  property.nearbyLandmarks?.some(landmark => 
-                                    landmark.toLowerCase().includes(selectedSchool.toLowerCase())
-                                  );
+      // School/Location filter — 10km radius from selected school
+      let meetsSchoolCriteria = true;
+      if (selectedSchool !== '') {
+        const school = POPULAR_SCHOOLS.find(s => s.shortName === selectedSchool);
+        const propLat = (property as any).latitude;
+        const propLng = (property as any).longitude;
+        if (school && propLat != null && propLng != null) {
+          const distance = calculateDistance(
+            [school.coordinates.latitude, school.coordinates.longitude],
+            [propLat, propLng]
+          );
+          meetsSchoolCriteria = distance <= 10;
+        } else {
+          meetsSchoolCriteria = false;
+        }
+      }
       
       return meetsPriceRange && meetsSearchCriteria && meetsSchoolCriteria;
     });

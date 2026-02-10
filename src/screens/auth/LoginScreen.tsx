@@ -106,8 +106,6 @@ export const LoginScreen: React.FC = () => {
           'You have successfully logged in.',
           [{ text: 'OK' }]
         );
-        // Navigation will be handled automatically by AppNavigator
-        // The user type will come from the authenticated user's profile
       } else {
         Alert.alert(
           'Login Failed',
@@ -141,7 +139,6 @@ export const LoginScreen: React.FC = () => {
   };
 
   const handleClose = () => {
-    // Set user type back to tenant to return to main app without authentication
     setUserType('tenant');
   };
 

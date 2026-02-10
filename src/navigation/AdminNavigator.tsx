@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { Users, UserCog } from 'lucide-react-native';
+import { Users, UserCog, Building2, GraduationCap } from 'lucide-react-native';
 import { AdminStackParamList } from './types';
-import { AdminTenantsScreen, AdminOwnersScreen } from '../screens/admin';
+import { AdminTenantsScreen, AdminOwnersScreen, AdminPropertiesScreen, AdminUniversitiesScreen } from '../screens/admin';
 import { colors } from '../styles/colors';
 import { useResponsive } from '../hooks/useResponsive';
 import { useAuth } from '../hooks/useAuth';
@@ -38,6 +38,26 @@ export const AdminNavigator: React.FC = () => {
       icon: (
         <UserCog
           color={activeTab === 'Owner' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+    {
+      name: 'Properties',
+      label: 'Properties',
+      icon: (
+        <Building2
+          color={activeTab === 'Properties' ? colors.primary : colors.gray[600]}
+          size={20}
+        />
+      ),
+    },
+    {
+      name: 'Universities',
+      label: 'Universities',
+      icon: (
+        <GraduationCap
+          color={activeTab === 'Universities' ? colors.primary : colors.gray[600]}
           size={20}
         />
       ),
@@ -121,6 +141,26 @@ export const AdminNavigator: React.FC = () => {
               tabBarLabel: 'Owner',
               tabBarIcon: ({ color, size }) => (
                 <UserCog color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Properties"
+            component={AdminPropertiesScreen}
+            options={{
+              tabBarLabel: 'Properties',
+              tabBarIcon: ({ color, size }) => (
+                <Building2 color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Universities"
+            component={AdminUniversitiesScreen}
+            options={{
+              tabBarLabel: 'Universities',
+              tabBarIcon: ({ color, size }) => (
+                <GraduationCap color={color} size={size} />
               ),
             }}
           />

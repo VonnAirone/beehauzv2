@@ -10,96 +10,11 @@ export interface University {
 export const UNIVERSITIES: University[] = [
   // University Belt Area
   {
-    id: 'ust',
-    name: 'University of Santo Tomas',
-    shortName: 'UST',
-    coordinates: [14.6091, 120.9894],
-    address: 'España Boulevard, Sampaloc, Manila',
-  },
-  {
-    id: 'feu',
-    name: 'Far Eastern University',
-    shortName: 'FEU',
-    coordinates: [14.6042, 120.9881],
-    address: 'Nicanor Reyes St, Sampaloc, Manila',
-  },
-  {
-    id: 'ue',
-    name: 'University of the East',
-    shortName: 'UE',
-    coordinates: [14.6019, 120.9918],
-    address: 'Claro M. Recto Avenue, Sampaloc, Manila',
-  },
-  {
-    id: 'plm',
-    name: 'Pamantasan ng Lungsod ng Maynila',
-    shortName: 'PLM',
-    coordinates: [14.5875, 120.9844],
-    address: 'General Luna St, Intramuros, Manila',
-  },
-
-  // Diliman Area
-  {
-    id: 'up-diliman',
-    name: 'University of the Philippines Diliman',
-    shortName: 'UP Diliman',
-    coordinates: [14.6537, 121.0685],
-    address: 'Diliman, Quezon City',
-  },
-  {
-    id: 'ateneo',
-    name: 'Ateneo de Manila University',
-    shortName: 'ADMU',
-    coordinates: [14.6395, 121.0777],
-    address: 'Katipunan Avenue, Loyola Heights, Quezon City',
-  },
-  {
-    id: 'miriam',
-    name: 'Miriam College',
-    shortName: 'MC',
-    coordinates: [14.6390, 121.0742],
-    address: 'Katipunan Avenue, Loyola Heights, Quezon City',
-  },
-
-  // Taft Area
-  {
-    id: 'dlsu',
-    name: 'De La Salle University',
-    shortName: 'DLSU',
-    coordinates: [14.5648, 120.9932],
-    address: 'Taft Avenue, Malate, Manila',
-  },
-  {
-    id: 'ceu',
-    name: 'Centro Escolar University',
-    shortName: 'CEU',
-    coordinates: [14.6047, 120.9950],
-    address: 'Mendiola St, San Miguel, Manila',
-  },
-
-  // QC Area
-  {
-    id: 'pup',
-    name: 'Polytechnic University of the Philippines',
-    shortName: 'PUP',
-    coordinates: [14.5995, 120.9842],
-    address: 'Anonas St, Sta. Mesa, Manila',
-  },
-  {
-    id: 'adamson',
-    name: 'Adamson University',
-    shortName: 'AdU',
-    coordinates: [14.5893, 120.9847],
-    address: 'San Marcelino St, Ermita, Manila',
-  },
-
-  // Makati/BGC Area
-  {
-    id: 'aim',
-    name: 'Asian Institute of Management',
-    shortName: 'AIM',
-    coordinates: [14.5547, 121.0244],
-    address: 'Joseph R. Puno St, Makati',
+    id: 'ua',
+    name: 'University of Antique',
+    shortName: 'University of Antique',
+    coordinates: [10.7915, 122.0083],
+    address: 'Sibalom, Antique',
   },
 
   // Add more universities as needed

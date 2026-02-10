@@ -130,6 +130,7 @@ const TenantTabs: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.content}>
         <Tab.Navigator
+          initialRouteName='Search'
           screenOptions={{
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.gray[400],

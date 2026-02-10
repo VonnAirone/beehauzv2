@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert, Mod
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3, House, Check } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Star, Wifi, Car, Utensils, Shield, Heart, MessageCircle, Users, Phone, Info, X, Edit3, House, Check, GraduationCap } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
@@ -408,6 +408,12 @@ export const BoardingHouseDetailScreen: React.FC = () => {
         <View style={styles.infoSection}>
           <View>
             <Text style={[typography.textStyles.h2, styles.propertyName]}>{boardingHouse.name}</Text>
+            {boardingHouse.isAccredited && (
+              <View style={styles.accreditedBadge}>
+                <GraduationCap size={14} color={colors.white} />
+                <Text style={styles.accreditedBadgeText}>University Accredited</Text>
+              </View>
+            )}
             <TouchableOpacity
               style={styles.locationRow}
               onPress={() => {
@@ -1046,6 +1052,22 @@ const styles = StyleSheet.create({
   propertyName: {
     color: colors.gray[900],
     marginBottom: 8,
+  },
+  accreditedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#16a34a',
+    marginBottom: 10,
+  },
+  accreditedBadgeText: {
+    color: colors.white,
+    fontSize: 12,
+    fontFamily: 'Figtree_600SemiBold',
   },
   locationRow: {
     flexDirection: 'row',

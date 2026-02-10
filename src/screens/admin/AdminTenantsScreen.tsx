@@ -26,18 +26,52 @@ export const AdminTenantsScreen: React.FC = () => {
     setError(null);
 
     try {
-      const { data, error: tenantsError } = await supabase
+      // Fetch tenants
+      const { data: tenantsData, error: tenantsError } = await supabase
         .from('tenants')
-        .select('id, name, year_level, school, date_started, date_left, status, property:properties(name, owner:profiles(full_name, email))')
+        .select('id, name, year_level, school, date_started, date_left, status, property_id')
         .order('date_started', { ascending: false });
 
       if (tenantsError) {
         throw tenantsError;
       }
 
-      const mappedTenants = (data ?? []).map((tenant: any) => {
-        const owner = tenant?.property?.owner;
+      // Fetch properties
+      const { data: propertiesData, error: propertiesError } = await supabase
+        .from('properties')
+        .select('id, name, owner_id');
+
+      if (propertiesError) {
+        throw propertiesError;
+      }
+
+      // Fetch owners
+      const { data: ownersData, error: ownersError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .eq('user_type', 'owner');
+
+      if (ownersError) {
+        throw ownersError;
+      }
+
+      // Create lookup maps
+      const propertiesMap = (propertiesData ?? []).reduce((acc: any, prop: any) => {
+        acc[prop.id] = prop;
+        return acc;
+      }, {});
+
+      const ownersMap = (ownersData ?? []).reduce((acc: any, owner: any) => {
+        acc[owner.id] = owner;
+        return acc;
+      }, {});
+
+      // Map tenants with property and owner info
+      const mappedTenants = (tenantsData ?? []).map((tenant: any) => {
+        const property = propertiesMap[tenant.property_id];
+        const owner = property ? ownersMap[property.owner_id] : null;
         const ownerLabel = owner?.full_name || owner?.email || 'Not assigned';
+
         return {
           id: tenant.id,
           name: tenant.name,
@@ -46,7 +80,7 @@ export const AdminTenantsScreen: React.FC = () => {
           dateStarted: tenant.date_started || '-',
           dateLeft: tenant.date_left || '-',
           status: (tenant.status || 'active').toLowerCase(),
-          propertyName: tenant?.property?.name || 'Unknown property',
+          propertyName: property?.name || 'Unknown property',
           ownerName: ownerLabel,
         };
       });

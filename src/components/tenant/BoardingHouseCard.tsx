@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ImageBackground, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
-import { Star, MapPin, Bed, Zap, Droplets, Users, Info } from 'lucide-react-native';
+import { Star, MapPin, Bed, Zap, Droplets, Users, Info, GraduationCap } from 'lucide-react-native';
 import { BoardingHouse } from '../../types/tenant';
 import { Card } from '../common/Card';
 import { typography } from '../../styles/typography';
@@ -117,6 +117,12 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
               ]} 
               resizeMode="cover" 
             />
+            {boardingHouse.isAccredited && (
+              <View style={styles.accreditedBadge}>
+                <GraduationCap size={12} color={colors.white} />
+                <Text style={styles.accreditedBadgeText}>Accredited</Text>
+              </View>
+            )}
             <View style={styles.ratingBadge}>
               <Star size={14} color={colors.warning} fill={colors.warning} />
               <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
@@ -135,6 +141,12 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
               imageStyle={styles.placeholderImageInner}
               resizeMode="cover"
             >
+              {boardingHouse.isAccredited && (
+                <View style={[styles.accreditedBadge, { position: 'absolute', top: 12, left: 12 }]}>
+                  <GraduationCap size={12} color={colors.white} />
+                  <Text style={styles.accreditedBadgeText}>Accredited</Text>
+                </View>
+              )}
               <View style={{
                 backgroundColor: colors.white,
                 padding: 10,
@@ -142,7 +154,7 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
                 }}>
                 <Text style={styles.imageEmptyText}>No photos added</Text>
               </View>
-              
+
             </ImageBackground>
           </View>
         )}
@@ -269,6 +281,23 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     opacity: 0.5
+  },
+  accreditedBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#16a34a',
+  },
+  accreditedBadgeText: {
+    color: colors.white,
+    fontSize: 11,
+    fontFamily: 'Figtree_600SemiBold',
   },
   ratingBadge: {
     position: 'absolute',

@@ -33,6 +33,8 @@ export type OwnerStackParamList = {
 export type AdminStackParamList = {
   Tenants: undefined;
   Owner: undefined;
+  Properties: undefined;
+  Universities: undefined;
 };
 
 export type TenantTabParamList = {
