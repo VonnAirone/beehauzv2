@@ -14,12 +14,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BetaAnalyticsDashboard } from '../../screens/admin/BetaAnalyticsDashboard';
 import { colors } from '../../styles/colors';
 
-// Admin credentials - In production, these should be env variables
+// Admin credentials - MUST be set via environment variables
+// No fallback values for security
 const ADMIN_CREDENTIALS = {
-  username: process.env.EXPO_PUBLIC_ADMIN_USERNAME || 'beehauz_admin',
-  password: process.env.EXPO_PUBLIC_ADMIN_PASSWORD || 'REMOVED_FROM_HISTORY',
-  accessCode: process.env.EXPO_PUBLIC_ADMIN_ACCESS_CODE || 'BETA_DASH_2025',
+  username: process.env.EXPO_PUBLIC_ADMIN_USERNAME,
+  password: process.env.EXPO_PUBLIC_ADMIN_PASSWORD,
+  accessCode: process.env.EXPO_PUBLIC_ADMIN_ACCESS_CODE,
 };
+
+// Validate that credentials are set
+if (!ADMIN_CREDENTIALS.username || !ADMIN_CREDENTIALS.password || !ADMIN_CREDENTIALS.accessCode) {
+  console.error('Admin credentials not configured. Set EXPO_PUBLIC_ADMIN_* environment variables.');
+}
 
 const ADMIN_SESSION_KEY = '@admin_session';
 const SESSION_DURATION = 2 * 60 * 60 * 1000; // 2 hours
