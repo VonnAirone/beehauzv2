@@ -14,18 +14,26 @@ export type AuthStackParamList = {
   OwnerSignup: undefined;
 };
 
-export type OwnerStackParamList = {
+export type OwnerTabParamList = {
   Dashboard: undefined;
   Properties: undefined;
+  Payments: undefined;
+  More: undefined;
+};
+
+export type OwnerStackParamList = {
+  OwnerTabs: NavigatorScreenParams<OwnerTabParamList> | undefined;
+  Profile: undefined;
+  PrivacyPolicy: undefined;
+  AboutUs: undefined;
+  TermsAndConditions: undefined;
   AddProperty: undefined;
   EditProperty: { propertyId: string };
   PropertyDetail: { propertyId: string };
   Tenants: undefined;
   TenantDetail: { tenantId: string };
-  BookingRequests: undefined;
   BookingHistory: undefined;
   Earnings: undefined;
-  Profile: undefined;
   Messages: undefined;
   Chat: { chatId: string };
 };
@@ -63,6 +71,7 @@ export type TenantStackParamList = {
   StudentProfile: undefined;
   PrivacyPolicy: undefined;
   AboutUs: undefined;
+  TermsAndConditions: undefined;
   Gallery: { houseId: string };
   Booking: { houseId: string };
   BookingDetail: { bookingId: string };

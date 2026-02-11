@@ -4,11 +4,14 @@ import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 import { supabase } from '../../../services/supabase';
 import { useAuthContext } from '../../../context/AuthContext';
+import { useResponsive } from '../../../hooks/useResponsive';
 import { Input } from '../../../components/common';
 import { Plus, User, Clock, Home, X, CheckCircle, XCircle } from 'lucide-react-native';
 
 export const OwnerDashboardScreen: React.FC = () => {
   const { user } = useAuthContext();
+  const { isMobile, isTablet } = useResponsive();
+  const isCompact = isMobile || isTablet;
 
   const [tenants, setTenants] = React.useState<Array<{
     id: string;
@@ -358,44 +361,74 @@ export const OwnerDashboardScreen: React.FC = () => {
     }
   };
 
+  const renderTenantCard = (tenant: typeof tenants[0]) => (
+    <View key={tenant.id} style={styles.tenantCard}>
+      <View style={styles.tenantCardHeader}>
+        <Text style={styles.tenantCardName} numberOfLines={1}>{tenant.name}</Text>
+        <Text
+          style={[
+            styles.statusBadge,
+            tenant.paymentStatus === 'Paid' && styles.statusPaid,
+            tenant.paymentStatus === 'Pending' && styles.statusPending,
+            tenant.paymentStatus === 'Due' && styles.statusDue,
+            tenant.paymentStatus === 'Left' && styles.statusLeft,
+          ]}
+        >
+          {tenant.paymentStatus}
+        </Text>
+      </View>
+      <View style={styles.tenantCardDetails}>
+        <View style={styles.tenantCardRow}>
+          <Text style={styles.tenantCardLabel}>Year Level</Text>
+          <Text style={styles.tenantCardValue}>{tenant.yearLevel}</Text>
+        </View>
+        <View style={styles.tenantCardRow}>
+          <Text style={styles.tenantCardLabel}>School</Text>
+          <Text style={styles.tenantCardValue} numberOfLines={1}>{tenant.school}</Text>
+        </View>
+        <View style={styles.tenantCardRow}>
+          <Text style={styles.tenantCardLabel}>Started</Text>
+          <Text style={styles.tenantCardValue}>{tenant.dateStarted}</Text>
+        </View>
+        {tenant.dateLeftRaw && (
+          <View style={styles.tenantCardRow}>
+            <Text style={styles.tenantCardLabel}>Left</Text>
+            <Text style={styles.tenantCardValue}>{tenant.dateLeft}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={[typography.textStyles.h2, styles.title]}>Owner Dashboard</Text>
       <Text style={[typography.textStyles.body, styles.subtitle]}>
         Welcome back! Here's your property overview.
       </Text>
 
-      <View style={styles.contentRow}>
-        <ScrollView
-          style={styles.mainColumn}
-          contentContainerStyle={styles.contentContainerStyle}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.statsGrid}>
-            {stats.map((item) => (
-              <View key={item.label} style={styles.statCard}>
-                <Text style={styles.statValue}>{item.value}</Text>
-                <Text style={styles.statLabel}>{item.label}</Text>
-              </View>
-            ))}
+      <View style={styles.statsGrid}>
+        {stats.map((item) => (
+          <View key={item.label} style={[styles.statCard, isCompact && styles.statCardCompact]}>
+            <Text style={styles.statValue}>{item.value}</Text>
+            <Text style={styles.statLabel}>{item.label}</Text>
           </View>
+        ))}
+      </View>
 
-          <View style={styles.tableCardWrapper}>
-            <View style={styles.tableCard}>
+      <View style={[styles.contentRow, isCompact && styles.contentRowCompact]}>
+        <View style={[styles.mainColumn, isCompact && styles.mainColumnCompact]}>
+          <View style={styles.tableCard}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Tenants</Text>
               <TouchableOpacity style={styles.inviteButton} onPress={handleOpenInvite}>
                 <Text style={styles.inviteButtonText}>Invite a user</Text>
                 <Plus size={16} color={'white'}/>
               </TouchableOpacity>
-            </View>
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.tableHeaderCell, styles.colName]}>Name</Text>
-              <Text style={[styles.tableHeaderCell, styles.colYear]}>Year Level</Text>
-              <Text style={[styles.tableHeaderCell, styles.colSchool]}>School</Text>
-              <Text style={[styles.tableHeaderCell, styles.colDate]}>Date Started</Text>
-              <Text style={[styles.tableHeaderCell, styles.colDate]}>Date Left</Text>
-              <Text style={[styles.tableHeaderCell, styles.colStatus]}>Payment Status</Text>
             </View>
 
             {isLoadingTenants && (
@@ -410,39 +443,57 @@ export const OwnerDashboardScreen: React.FC = () => {
               <Text style={styles.emptyTableText}>No tenants enrolled in your property.</Text>
             )}
 
-            {!isLoadingTenants && !tenantsError && tenants.length > 0 && tenants.map((tenant) => (
-              <View key={tenant.id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.colName]} numberOfLines={1}>
-                  {tenant.name}
-                </Text>
-                <Text style={[styles.tableCell, styles.colYear]} numberOfLines={1}>
-                  {tenant.yearLevel}
-                </Text>
-                <Text style={[styles.tableCell, styles.colSchool]} numberOfLines={1}>
-                  {tenant.school}
-                </Text>
-                <Text style={[styles.tableCell, styles.colDate]}>{tenant.dateStarted}</Text>
-                <Text style={[styles.tableCell, styles.colDate]}>{tenant.dateLeft}</Text>
-                <Text
-                  style={[
-                    styles.tableCell,
-                    styles.colStatus,
-                    styles.statusBadge,
-                    tenant.paymentStatus === 'Paid' && styles.statusPaid,
-                    tenant.paymentStatus === 'Pending' && styles.statusPending,
-                    tenant.paymentStatus === 'Due' && styles.statusDue,
-                    tenant.paymentStatus === 'Left' && styles.statusLeft,
-                  ]}
-                >
-                  {tenant.paymentStatus}
-                </Text>
-              </View>
-            ))}
-            </View>
-          </View>
-        </ScrollView>
+            {/* Mobile/Tablet: Card layout */}
+            {isCompact && !isLoadingTenants && !tenantsError && tenants.length > 0 &&
+              tenants.map(renderTenantCard)
+            }
 
-        <View style={styles.sideColumn}>
+            {/* Desktop: Table layout */}
+            {!isCompact && (
+              <>
+                <View style={styles.tableHeaderRow}>
+                  <Text style={[styles.tableHeaderCell, styles.colName]}>Name</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colYear]}>Year Level</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colSchool]}>School</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colDate]}>Date Started</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colDate]}>Date Left</Text>
+                  <Text style={[styles.tableHeaderCell, styles.colStatus]}>Payment Status</Text>
+                </View>
+
+                {!isLoadingTenants && !tenantsError && tenants.length > 0 && tenants.map((tenant) => (
+                  <View key={tenant.id} style={styles.tableRow}>
+                    <Text style={[styles.tableCell, styles.colName]} numberOfLines={1}>
+                      {tenant.name}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colYear]} numberOfLines={1}>
+                      {tenant.yearLevel}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colSchool]} numberOfLines={1}>
+                      {tenant.school}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.colDate]}>{tenant.dateStarted}</Text>
+                    <Text style={[styles.tableCell, styles.colDate]}>{tenant.dateLeft}</Text>
+                    <Text
+                      style={[
+                        styles.tableCell,
+                        styles.colStatus,
+                        styles.statusBadge,
+                        tenant.paymentStatus === 'Paid' && styles.statusPaid,
+                        tenant.paymentStatus === 'Pending' && styles.statusPending,
+                        tenant.paymentStatus === 'Due' && styles.statusDue,
+                        tenant.paymentStatus === 'Left' && styles.statusLeft,
+                      ]}
+                    >
+                      {tenant.paymentStatus}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+          </View>
+        </View>
+
+        <View style={[styles.sideColumn, isCompact && styles.sideColumnCompact]}>
           <View style={styles.notificationCard}>
             <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Notifications</Text>
             {isLoadingNotifications && (
@@ -664,15 +715,18 @@ export const OwnerDashboardScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#F7F8FA',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   title: {
     color: colors.primary,
@@ -683,18 +737,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   contentRow: {
-    flex: 1,
     flexDirection: 'row',
     gap: 16,
+  },
+  contentRowCompact: {
+    flexDirection: 'column',
   },
   mainColumn: {
     flex: 1,
   },
-  contentContainerStyle: {
-    flexGrow: 1,  
+  mainColumnCompact: {
+    flex: undefined,
   },
   sideColumn: {
     width: 300,
+  },
+  sideColumnCompact: {
+    width: '100%' as any,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -711,6 +770,10 @@ const styles = StyleSheet.create({
     borderColor: colors.gray[200],
     padding: 16,
   },
+  statCardCompact: {
+    minWidth: 90,
+    padding: 12,
+  },
   statValue: {
     fontSize: 20,
     fontWeight: '700',
@@ -721,16 +784,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.gray[600],
   },
-  tableCardWrapper: {
-    flex: 1,
-  },
   tableCard: {
-    flex: 1,
     backgroundColor: colors.white,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.gray[200],
     padding: 16,
+  },
+  // Mobile tenant card styles
+  tenantCard: {
+    backgroundColor: colors.gray[50],
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  tenantCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  tenantCardName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.gray[900],
+    flex: 1,
+    marginRight: 8,
+  },
+  tenantCardDetails: {
+    gap: 4,
+  },
+  tenantCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  tenantCardLabel: {
+    fontSize: 12,
+    color: colors.gray[500],
+  },
+  tenantCardValue: {
+    fontSize: 12,
+    color: colors.gray[800],
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
   },
   sectionTitle: {
     color: colors.gray[900],

@@ -1,25 +1,31 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
-import { LayoutDashboard, Home, Calendar, User } from 'lucide-react-native';
-import { OwnerStackParamList } from './types';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { LayoutDashboard, Home, CircleDollarSign, Ellipsis } from 'lucide-react-native';
+import { OwnerStackParamList, OwnerTabParamList } from './types';
 import { OwnerDashboardScreen } from '../screens/owner/dashboard/DashboardScreen';
 import { PropertiesScreen } from '../screens/owner/properties/PropertiesScreen';
-import { BookingRequestsScreen } from '../screens/owner/bookings/BookingRequestsScreen';
+import { PaymentsScreen } from '../screens/owner/payments/PaymentsScreen';
+import { OwnerMoreScreen } from '../screens/owner/more/OwnerMoreScreen';
 import { ProfileScreen } from '../screens/shared/profile/ProfileScreen';
+import { AboutUsScreen } from '../screens/shared/profile/AboutUsScreen';
+import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
+import { TermsAndConditionsScreen } from '../screens/shared/TermsAndConditionsScreen';
 import { colors } from '../styles/colors';
 import { useResponsive } from '../hooks/useResponsive';
 import { DesktopSidebar } from '../components/common/DesktopSidebar';
 
-const Tab = createBottomTabNavigator<OwnerStackParamList>();
+const Tab = createBottomTabNavigator<OwnerTabParamList>();
+const Stack = createStackNavigator<OwnerStackParamList>();
 
-export const OwnerNavigator: React.FC = () => {
+const OwnerTabs: React.FC = () => {
   const { isDesktop, isWeb } = useResponsive();
   const [activeTab, setActiveTab] = useState<string>('Dashboard');
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<StackNavigationProp<OwnerStackParamList>>();
 
-  // Create navigation items with dynamic colors based on active tab
   const getNavigationItems = () => [
     {
       name: 'Dashboard',
@@ -42,21 +48,21 @@ export const OwnerNavigator: React.FC = () => {
       ),
     },
     {
-      name: 'BookingRequests',
-      label: 'Bookings',
+      name: 'Payments',
+      label: 'Payments',
       icon: (
-        <Calendar
-          color={activeTab === 'BookingRequests' ? colors.primary : colors.gray[600]}
+        <CircleDollarSign
+          color={activeTab === 'Payments' ? colors.primary : colors.gray[600]}
           size={20}
         />
       ),
     },
     {
-      name: 'Profile',
-      label: 'Profile',
+      name: 'More',
+      label: 'More',
       icon: (
-        <User
-          color={activeTab === 'Profile' ? colors.primary : colors.gray[600]}
+        <Ellipsis
+          color={activeTab === 'More' ? colors.primary : colors.gray[600]}
           size={20}
         />
       ),
@@ -67,13 +73,15 @@ export const OwnerNavigator: React.FC = () => {
 
   const handleTabPress = (tabName: string) => {
     setActiveTab(tabName);
-    navigation.navigate('Main', { screen: tabName });
+    navigation.navigate('OwnerTabs', {
+      screen: tabName as keyof OwnerTabParamList,
+    });
   };
 
   return (
     <View style={styles.container}>
       {isDesktop && isWeb && (
-        <DesktopSidebar 
+        <DesktopSidebar
           items={navigationItems}
           activeRoute={activeTab}
           onNavigate={handleTabPress}
@@ -94,8 +102,8 @@ export const OwnerNavigator: React.FC = () => {
             },
           }}
         >
-          <Tab.Screen 
-            name="Dashboard" 
+          <Tab.Screen
+            name="Dashboard"
             component={OwnerDashboardScreen}
             options={{
               tabBarLabel: 'Dashboard',
@@ -104,8 +112,8 @@ export const OwnerNavigator: React.FC = () => {
               ),
             }}
           />
-          <Tab.Screen 
-            name="Properties" 
+          <Tab.Screen
+            name="Properties"
             component={PropertiesScreen}
             options={{
               tabBarLabel: 'Properties',
@@ -114,23 +122,23 @@ export const OwnerNavigator: React.FC = () => {
               ),
             }}
           />
-          <Tab.Screen 
-            name="BookingRequests" 
-            component={BookingRequestsScreen}
+          <Tab.Screen
+            name="Payments"
+            component={PaymentsScreen}
             options={{
-              tabBarLabel: 'Bookings',
+              tabBarLabel: 'Payments',
               tabBarIcon: ({ color, size }) => (
-                <Calendar color={color} size={size} />
+                <CircleDollarSign color={color} size={size} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Profile" 
-            component={ProfileScreen}
+          <Tab.Screen
+            name="More"
+            component={OwnerMoreScreen}
             options={{
-              tabBarLabel: 'Profile',
+              tabBarLabel: 'More',
               tabBarIcon: ({ color, size }) => (
-                <User color={color} size={size} />
+                <Ellipsis color={color} size={size} />
               ),
             }}
           />
@@ -140,13 +148,31 @@ export const OwnerNavigator: React.FC = () => {
   );
 };
 
+export const OwnerNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="OwnerTabs" component={OwnerTabs} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="AboutUs" component={AboutUsScreen} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
+    </Stack.Navigator>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
+    backgroundColor: colors.primary
   },
   content: {
     flex: 1,
+    
   },
   hiddenTabBar: {
     display: 'none',

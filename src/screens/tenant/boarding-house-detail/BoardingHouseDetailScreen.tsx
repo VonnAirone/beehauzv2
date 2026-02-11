@@ -712,7 +712,6 @@ export const BoardingHouseDetailScreen: React.FC = () => {
               <Text style={styles.bookingPeriod}>/month</Text>
             </View>
             <Button
-              disabled
               title="Book Now"
               onPress={handleBookNow}
               style={styles.bookButton}

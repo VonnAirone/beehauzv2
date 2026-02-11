@@ -17,6 +17,7 @@ import { StudentProfileScreen } from '../screens/tenant/profile/StudentProfileSc
 import { MoreScreen } from '../screens/tenant/more/MoreScreen';
 import { PersonalInformationScreen, EditProfileScreen, AboutUsScreen } from '../screens/shared/profile';
 import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
+import { TermsAndConditionsScreen } from '../screens/shared/TermsAndConditionsScreen';
 import { colors } from '../styles/colors';
 import { useResponsive } from '../hooks/useResponsive';
 import { DesktopSidebar } from '../components/common/DesktopSidebar';
@@ -264,6 +265,7 @@ export const TenantNavigator: React.FC = () => {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="AboutUs" component={AboutUsScreen} />
+      <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
     </Stack.Navigator>
   );
 };

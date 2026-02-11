@@ -19,9 +19,6 @@ import {
   X,
   Check,
   GraduationCap,
-  Star,
-  MessageSquare,
-  User,
 } from 'lucide-react-native';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
@@ -55,16 +52,6 @@ interface EditFormData {
   is_accredited: boolean;
 }
 
-interface PropertyReview {
-  id: string;
-  property_id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  tenant: { full_name: string | null };
-  property: { name: string };
-}
-
 export const PropertiesScreen: React.FC = () => {
   const { user } = useAuthContext();
   const { isMobile, isDesktop } = useResponsive();
@@ -85,11 +72,6 @@ export const PropertiesScreen: React.FC = () => {
     is_accredited: false,
   });
   const [isSaving, setIsSaving] = React.useState(false);
-
-  // Reviews state
-  const [reviews, setReviews] = React.useState<PropertyReview[]>([]);
-  const [reviewsLoading, setReviewsLoading] = React.useState(false);
-  const [selectedPropertyFilter, setSelectedPropertyFilter] = React.useState<string | null>(null);
 
   const fetchProperties = React.useCallback(async () => {
     if (!user?.id) return;
@@ -115,36 +97,6 @@ export const PropertiesScreen: React.FC = () => {
   React.useEffect(() => {
     fetchProperties();
   }, [fetchProperties]);
-
-  // Fetch reviews for all owner properties
-  const fetchReviews = React.useCallback(async () => {
-    if (properties.length === 0) return;
-    setReviewsLoading(true);
-
-    try {
-      const propertyIds = properties.map((p) => p.id);
-      const { data, error: fetchErr } = await supabase
-        .from('property_reviews')
-        .select('id, property_id, rating, comment, created_at, tenant:profiles!tenant_id(full_name), property:properties!property_id(name)')
-        .in('property_id', propertyIds)
-        .order('created_at', { ascending: false });
-
-      if (fetchErr) throw fetchErr;
-      setReviews((data as unknown as PropertyReview[]) ?? []);
-    } catch {
-      // Silently fail — reviews are supplementary
-    } finally {
-      setReviewsLoading(false);
-    }
-  }, [properties]);
-
-  React.useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
-
-  const filteredReviews = selectedPropertyFilter
-    ? reviews.filter((r) => r.property_id === selectedPropertyFilter)
-    : reviews;
 
   const openEditModal = (property: OwnerProperty) => {
     setEditingProperty(property);
@@ -457,148 +409,6 @@ export const PropertiesScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Reviews section */}
-        {!isLoading && properties.length > 0 && (
-          <View style={reviewStyles.section}>
-            {/* Section header */}
-            <View style={reviewStyles.sectionHeader}>
-              <View style={reviewStyles.sectionTitleRow}>
-                <Star size={18} color={colors.warning} />
-                <Text style={[typography.textStyles.h3, reviewStyles.sectionTitle]}>Reviews</Text>
-              </View>
-              <Text style={[typography.textStyles.caption, { color: colors.text.tertiary }]}>
-                {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
-              </Text>
-            </View>
-
-            {/* Property filter chips — shown if multiple properties */}
-            {properties.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={reviewStyles.filterScroll}
-                contentContainerStyle={reviewStyles.filterRow}
-              >
-                <TouchableOpacity
-                  style={[
-                    reviewStyles.filterChip,
-                    selectedPropertyFilter === null && reviewStyles.filterChipActive,
-                  ]}
-                  onPress={() => setSelectedPropertyFilter(null)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      reviewStyles.filterChipText,
-                      selectedPropertyFilter === null && reviewStyles.filterChipTextActive,
-                    ]}
-                  >
-                    All Properties
-                  </Text>
-                </TouchableOpacity>
-                {properties.map((p) => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[
-                      reviewStyles.filterChip,
-                      selectedPropertyFilter === p.id && reviewStyles.filterChipActive,
-                    ]}
-                    onPress={() => setSelectedPropertyFilter(p.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        reviewStyles.filterChipText,
-                        selectedPropertyFilter === p.id && reviewStyles.filterChipTextActive,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {p.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-
-            {/* Reviews list */}
-            <View style={reviewStyles.listCard}>
-              {reviewsLoading && (
-                <View style={reviewStyles.emptyState}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                </View>
-              )}
-
-              {!reviewsLoading && filteredReviews.length === 0 && (
-                <View style={reviewStyles.emptyState}>
-                  <MessageSquare size={32} color={colors.text.tertiary} />
-                  <Text style={[typography.textStyles.bodySmall, { color: colors.text.tertiary, marginTop: 8 }]}>
-                    No reviews yet
-                  </Text>
-                </View>
-              )}
-
-              {!reviewsLoading &&
-                filteredReviews.map((review, index) => (
-                  <View
-                    key={review.id}
-                    style={[
-                      reviewStyles.reviewRow,
-                      index === filteredReviews.length - 1 && reviewStyles.reviewRowLast,
-                    ]}
-                  >
-                    {/* Avatar + name */}
-                    <View style={reviewStyles.reviewHeader}>
-                      <View style={reviewStyles.avatar}>
-                        <User size={14} color={colors.white} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[typography.textStyles.bodySmall, { fontWeight: '600', color: colors.text.primary }]}>
-                          {review.tenant?.full_name || 'Anonymous'}
-                        </Text>
-                        {properties.length > 1 && !selectedPropertyFilter && (
-                          <Text style={[typography.textStyles.caption, { color: colors.text.tertiary }]}>
-                            {review.property?.name}
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={[typography.textStyles.caption, { color: colors.text.tertiary }]}>
-                        {new Date(review.created_at).toLocaleDateString('en-PH', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </Text>
-                    </View>
-
-                    {/* Star rating */}
-                    <View style={reviewStyles.starsRow}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          size={14}
-                          color={colors.warning}
-                          fill={s <= review.rating ? colors.warning : 'none'}
-                        />
-                      ))}
-                      <Text style={[typography.textStyles.caption, { color: colors.text.secondary, marginLeft: 4 }]}>
-                        {review.rating}.0
-                      </Text>
-                    </View>
-
-                    {/* Comment */}
-                    {review.comment && (
-                      <Text
-                        style={[typography.textStyles.bodySmall, { color: colors.text.secondary, marginTop: 4 }]}
-                        numberOfLines={3}
-                      >
-                        {review.comment}
-                      </Text>
-                    )}
-                  </View>
-                ))}
-            </View>
-          </View>
-        )}
       </ScrollView>
 
       {renderEditModal()}
@@ -664,94 +474,6 @@ const detailStyles = StyleSheet.create({
   },
   value: {
     color: colors.text.primary,
-  },
-});
-
-// ─── Review Styles ────────────────────────────────────────────
-const reviewStyles = StyleSheet.create({
-  section: {
-    marginTop: spacing[6],
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sectionTitle: {
-    color: colors.text.primary,
-  },
-  filterScroll: {
-    marginBottom: spacing[3],
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border.medium,
-  },
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterChipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  filterChipTextActive: {
-    color: colors.white,
-  },
-  listCard: {
-    backgroundColor: colors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    ...shadows.base,
-    overflow: 'hidden',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[10],
-  },
-  reviewRow: {
-    padding: spacing[4],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border.light,
-  },
-  reviewRowLast: {
-    borderBottomWidth: 0,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 6,
-  },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  starsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
   },
 });
 

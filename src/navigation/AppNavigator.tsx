@@ -16,55 +16,75 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
   const linking = {
-    prefixes: ['https://beehauzv2.vercel.app', 'http://localhost:8081', 'http://localhost:19006'],
-    config: {
-      screens: {
-        Auth: {
-          path: 'auth',
-          screens: {
-            Login: 'login',
-            Signup: 'signup',
-            OwnerSignup: 'owner-signup',
-          },
+  prefixes: ['https://beehauzv2.vercel.app', 'http://localhost:8081', 'http://localhost:19006'],
+  config: {
+    screens: {
+      Auth: {
+        path: 'auth',
+        screens: {
+          Login: 'login',
+          Signup: 'signup',
+          OwnerSignup: 'owner-signup',
         },
-        Main: {
-          path: '',
-          screens: {
-            // Tenant screens
-            TenantTabs: {
-              path: '',
-              screens: {
-                Search: '',
-                Map: 'map',
-                MyBookings: 'bookings',
-                Notifications: 'notifications',
-                More: 'more',
-              },
-            },
-            MapView: 'map-view',
-            BoardingHouseDetail: 'property',
-            BlogDetail: 'blog',
-            FavoritesList: 'favorites',
-            StudentProfile: 'student-profile',
-            PersonalInformation: 'personal-info',
-            EditProfile: 'edit-profile',
-            PrivacyPolicy: 'privacy-policy',
-            AboutUs: 'about',
-            // Owner screens
-            Dashboard: 'dashboard',
-            Properties: 'my-properties',
-            BookingRequests: 'booking-requests',
-            Profile: 'profile',
-            // Admin screens
-            Tenants: 'tenants',
-            Owner: 'owners',
-            Universities: 'universities',
-          },
-        },
-        Admin: 'admin',
       },
+
+      // Give Main its own group, but do NOT let multiple children claim ''
+      Main: {
+        path: '',
+        screens: {
+          // Tenant owns the root
+          TenantTabs: {
+            path: '',
+            screens: {
+              Search: '',              // /
+              Map: 'map',              // /map
+              MyBookings: 'bookings',  // /bookings
+              Notifications: 'notifications',
+              More: 'more',
+            },
+          },
+
+          // Owner is under /owner
+          OwnerTabs: {
+            path: 'owner',
+            screens: {
+              Dashboard: 'dashboard',   // /owner/dashboard
+              Properties: 'properties', // /owner/properties
+              Payments: 'payments',     // /owner/payments
+              More: 'more',             // /owner/more (no conflict with tenant now)
+            },
+          },
+
+          // Keep owner profile relative to owner base to avoid weird overlaps
+          Profile: {
+            path: 'owner/profile',
+          },
+
+          // Other shared routes
+          MapView: 'map-view',
+          BoardingHouseDetail: 'property',
+          BlogDetail: 'blog',
+          FavoritesList: 'favorites',
+          StudentProfile: 'student-profile',
+          PersonalInformation: 'personal-info',
+          EditProfile: 'edit-profile',
+          PrivacyPolicy: 'privacy-policy',
+          AboutUs: 'about',
+          TermsAndConditions: 'terms-and-conditions',
+
+          // Admin screens inside Main (if you really want them here)
+          Tenants: 'tenants',
+          Owner: 'owners',
+          Universities: 'universities',
+        },
+      },
+
+      // Admin gate at /admin
+      Admin: 'admin',
     },
-  };
+  },
+};
+
   const navTheme = {
     ...DefaultTheme,
     colors: {
