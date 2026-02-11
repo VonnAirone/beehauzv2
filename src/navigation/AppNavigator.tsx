@@ -16,12 +16,52 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export const AppNavigator: React.FC = () => {
   const linking = {
-    prefixes: ['http://localhost:8081', 'http://localhost:19006'],
+    prefixes: ['https://beehauzv2.vercel.app', 'http://localhost:8081', 'http://localhost:19006'],
     config: {
       screens: {
+        Auth: {
+          path: 'auth',
+          screens: {
+            Login: 'login',
+            Signup: 'signup',
+            OwnerSignup: 'owner-signup',
+          },
+        },
+        Main: {
+          path: '',
+          screens: {
+            // Tenant screens
+            TenantTabs: {
+              path: '',
+              screens: {
+                Search: '',
+                Map: 'map',
+                MyBookings: 'bookings',
+                Notifications: 'notifications',
+                More: 'more',
+              },
+            },
+            MapView: 'map-view',
+            BoardingHouseDetail: 'property',
+            BlogDetail: 'blog',
+            FavoritesList: 'favorites',
+            StudentProfile: 'student-profile',
+            PersonalInformation: 'personal-info',
+            EditProfile: 'edit-profile',
+            PrivacyPolicy: 'privacy-policy',
+            AboutUs: 'about',
+            // Owner screens
+            Dashboard: 'dashboard',
+            Properties: 'my-properties',
+            BookingRequests: 'booking-requests',
+            Profile: 'profile',
+            // Admin screens
+            Tenants: 'tenants',
+            Owner: 'owners',
+            Universities: 'universities',
+          },
+        },
         Admin: 'admin',
-        Auth: 'auth',
-        Main: '',
       },
     },
   };
