@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
-import { X } from 'lucide-react-native';
+import { ArrowLeft, X } from 'lucide-react-native';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
@@ -14,15 +14,16 @@ export const PrivacyPolicyScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.closeButton} 
+                <TouchableOpacity 
+          style={styles.closeButton}
           onPress={() => navigation.goBack()}
         >
-          <X size={24} color={colors.gray[600]} />
+          <ArrowLeft size={24} color={colors.gray[700]} />
         </TouchableOpacity>
         <Text style={[typography.textStyles.h2, styles.title]}>
           Privacy Policy
         </Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -124,10 +125,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
+  },
+    headerSpacer: {
+    width: 32,
   },
   closeButton: {
     padding: spacing[2],

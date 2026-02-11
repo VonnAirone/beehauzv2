@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -37,11 +37,13 @@ interface MapProps {
   height?: number | string;
   width?: number | string;
   onMarkerClick?: (marker: MapMarker) => void;
+  onMapClick?: () => void;
   routeInfo?: RouteInfo | null;
 }
 
 // Create custom marker icon for properties
 const createPropertyIcon = (imageUrl?: string, title?: string, price?: string) => {
+  const displayText = price || 'N/A';
   const iconHtml = `
     <div style="
       display: flex;
@@ -50,48 +52,17 @@ const createPropertyIcon = (imageUrl?: string, title?: string, price?: string) =
       cursor: pointer;
     ">
       <div style="
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        overflow: hidden;
-        border: 3px solid #FF8B00;
-        width: 80px;
+        background: #FF8B00;
+        color: white;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 20px;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         transition: transform 0.2s;
-      " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-        ${imageUrl ? `
-          <img src="${imageUrl}" style="
-            width: 80px;
-            height: 60px;
-            object-fit: cover;
-            display: block;
-          " />
-        ` : `
-          <div style="
-            width: 80px;
-            height: 60px;
-            background: linear-gradient(135deg, #FFE5CC 0%, #FFB366 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF8B00" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-          </div>
-        `}
-        ${price ? `
-          <div style="
-            background: #FF8B00;
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 8px;
-            text-align: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          ">${price}</div>
-        ` : ''}
-      </div>
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">${displayText}</div>
       <div style="
         width: 0;
         height: 0;
@@ -106,9 +77,9 @@ const createPropertyIcon = (imageUrl?: string, title?: string, price?: string) =
   return L.divIcon({
     html: iconHtml,
     className: 'custom-marker-icon',
-    iconSize: [80, 85],
-    iconAnchor: [40, 85],
-    popupAnchor: [0, -85],
+    iconSize: [0, 0],
+    iconAnchor: [0, 38],
+    popupAnchor: [0, -38],
   });
 };
 
@@ -167,6 +138,16 @@ const createSchoolIcon = () => {
   });
 };
 
+// Component to handle map background clicks
+const MapClickHandler: React.FC<{ onClick?: () => void }> = ({ onClick }) => {
+  useMapEvents({
+    click: () => {
+      onClick?.();
+    },
+  });
+  return null;
+};
+
 export const Map: React.FC<MapProps> = ({
   center = [14.5995, 120.9842], // Manila, Philippines default
   zoom = 13,
@@ -174,10 +155,11 @@ export const Map: React.FC<MapProps> = ({
   height = 400,
   width = '100%',
   onMarkerClick,
+  onMapClick,
   routeInfo,
 }) => {
   return (
-    <View style={[styles.container, { height, width }]}>
+    <View style={[styles.container, { height, width } as any]}>
       <MapContainer
         center={center}
         zoom={zoom}
@@ -188,6 +170,7 @@ export const Map: React.FC<MapProps> = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <MapClickHandler onClick={onMapClick} />
 
         {/* Property and user location markers */}
         {markers.map((marker) => {

@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
-import { Search, Calendar, Bell, User, MapPin } from 'lucide-react-native';
+import { Search, Calendar, Bell, User, MapPin, Ellipsis } from 'lucide-react-native';
 import { TenantStackParamList, TenantTabParamList } from './types';
 import { SearchScreen } from '../screens/tenant/search/SearchScreen';
 import { MapViewScreen } from '../screens/tenant/map';
@@ -14,6 +14,7 @@ import { BoardingHouseDetailScreen } from '../screens/tenant/boarding-house-deta
 import { BlogDetailScreen } from '../screens/tenant/blog';
 import { FavoritesListScreen } from '../screens/tenant/favorites';
 import { StudentProfileScreen } from '../screens/tenant/profile/StudentProfileScreen';
+import { MoreScreen } from '../screens/tenant/more/MoreScreen';
 import { PersonalInformationScreen, EditProfileScreen, AboutUsScreen } from '../screens/shared/profile';
 import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
 import { colors } from '../styles/colors';
@@ -58,7 +59,6 @@ const TenantTabs: React.FC = () => {
   const authRequiredTabs: Record<string, FeatureType> = {
     'MyBookings': 'access_bookings',
     'Notifications': 'access_notifications',
-    'Profile': 'access_profile',
   };
 
   const handleAuthRequired = (tabName: string) => {
@@ -124,11 +124,11 @@ const TenantTabs: React.FC = () => {
       ),
     },
     {
-      name: 'Profile',
-      label: 'Profile',
+      name: 'More',
+      label: 'More',
       icon: (
-        <User
-          color={activeTab === 'Profile' ? colors.primary : colors.gray[600]}
+        <Ellipsis
+          color={activeTab === 'More' ? colors.primary : colors.gray[600]}
           size={20}
         />
       ),
@@ -223,12 +223,12 @@ const TenantTabs: React.FC = () => {
             }}
           /> */}
           <Tab.Screen
-            name="Profile"
-            component={StudentProfileScreen}
+            name="More"
+            component={MoreScreen}
             options={{
-              tabBarLabel: 'Profile',
+              tabBarLabel: 'More',
               tabBarIcon: ({ color, size }) => (
-                <User color={color} size={size} />
+                <Ellipsis color={color} size={size} />
               ),
             }}
           />

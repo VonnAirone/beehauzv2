@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ImageBackground, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
-import { Star, MapPin, Bed, Zap, Droplets, Users, Info, GraduationCap } from 'lucide-react-native';
+import { Star, MapPin, Bed, Zap, Droplets, Users, Info, GraduationCap, Check } from 'lucide-react-native';
 import { BoardingHouse } from '../../types/tenant';
 import { Card } from '../common/Card';
 import { typography } from '../../styles/typography';
@@ -10,14 +10,21 @@ import { useResponsive } from '../../hooks/useResponsive';
 interface BoardingHouseCardProps {
   boardingHouse: BoardingHouse;
   onPress?: (boardingHouse: BoardingHouse) => void;
+  compareMode?: boolean;
+  isSelectedForCompare?: boolean;
+  onCompareToggle?: (boardingHouse: BoardingHouse) => void;
 }
 
 export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   boardingHouse,
   onPress,
+  compareMode,
+  isSelectedForCompare,
+  onCompareToggle,
 }) => {
   const { isDesktop, isTablet } = useResponsive();
   const [showTooltip, setShowTooltip] = React.useState(false);
+
   
   const {
     name,
@@ -94,8 +101,14 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
   );
 
   return (
-    <TouchableOpacity 
-      onPress={() => onPress?.(boardingHouse)} 
+    <TouchableOpacity
+      onPress={() => {
+        if (compareMode) {
+          onCompareToggle?.(boardingHouse);
+        } else {
+          onPress?.(boardingHouse);
+        }
+      }}
       activeOpacity={0.7}
       style={[
         styles.cardWrapper,
@@ -105,6 +118,7 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
       <Card style={[
         styles.card,
         Platform.OS === 'web' && styles.cardWeb,
+        isSelectedForCompare && styles.cardSelected,
       ]}>
         {/* Image Section */}
         {images.length > 0 ? (
@@ -127,6 +141,11 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
               <Star size={14} color={colors.warning} fill={colors.warning} />
               <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
             </View>
+            {compareMode && (
+              <View style={[styles.compareCheckbox, isSelectedForCompare && styles.compareCheckboxSelected]}>
+                {isSelectedForCompare && <Check size={16} color={colors.white} />}
+              </View>
+            )}
           </View>
         ) : (
           <View
@@ -154,7 +173,11 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
                 }}>
                 <Text style={styles.imageEmptyText}>No photos added</Text>
               </View>
-
+              {compareMode && (
+                <View style={[styles.compareCheckbox, { position: 'absolute', top: 12, right: 12 }, isSelectedForCompare && styles.compareCheckboxSelected]}>
+                  {isSelectedForCompare && <Check size={16} color={colors.white} />}
+                </View>
+              )}
             </ImageBackground>
           </View>
         )}
@@ -178,7 +201,11 @@ export const BoardingHouseCard: React.FC<BoardingHouseCardProps> = ({
             </Text>
           </View>
 
-          <View style={[styles.bedsAndPrice
+          <View style={[styles.bedsAndPrice, {
+            flexDirection: isSmallScreen ? 'column' : 'row',
+            justifyContent: isSmallScreen ? 'flex-start' : 'space-between',
+            alignItems: isSmallScreen ? 'flex-start' : 'center',
+          }
           ]}>
             <View style={styles.priceRow}>
               <Text style={[typography.textStyles.h4, styles.price]}>
@@ -236,7 +263,6 @@ const styles = StyleSheet.create({
   card: {
     overflow: 'hidden',
     width: '100%',
-    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -482,5 +508,27 @@ const styles = StyleSheet.create({
     color: colors.gray[600],
     fontFamily: 'Figtree_400Regular',
     fontSize: 10,
+  },
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  compareCheckbox: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.white,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  compareCheckboxSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 });

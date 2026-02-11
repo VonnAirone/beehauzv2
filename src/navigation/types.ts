@@ -43,6 +43,7 @@ export type TenantTabParamList = {
   MyBookings: undefined;
   Notifications: undefined;
   Profile: undefined;
+  More: undefined;
 };
 
 export type TenantStackParamList = {

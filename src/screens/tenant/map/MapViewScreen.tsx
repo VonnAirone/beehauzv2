@@ -271,18 +271,6 @@ export const MapViewScreen: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        {!isMobile && (
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <ArrowLeft size={24} color={colors.primary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Map View</Text>
-            <View style={styles.backButton} />
-          </View>
-        )}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>
@@ -296,18 +284,6 @@ export const MapViewScreen: React.FC = () => {
   if (error) {
     return (
       <View style={styles.container}>
-        {!isMobile && (
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <ArrowLeft size={24} color={colors.primary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Map View</Text>
-            <View style={styles.backButton} />
-          </View>
-        )}
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>Unable to load map</Text>
           <Text style={styles.errorText}>{error}</Text>
@@ -318,19 +294,6 @@ export const MapViewScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {!isMobile && (
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <ArrowLeft size={24} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Map View</Text>
-          <View style={styles.backButton} />
-        </View>
-      )}
-
       <View style={styles.mapContainer}>
         <Map
           key={mapKey}
@@ -340,6 +303,7 @@ export const MapViewScreen: React.FC = () => {
           height="100%"
           width="100%"
           onMarkerClick={handleMarkerClick}
+          onMapClick={handleClearRoute}
           routeInfo={routeInfo}
         />
 

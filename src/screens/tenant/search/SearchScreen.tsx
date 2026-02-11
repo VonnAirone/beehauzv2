@@ -4,10 +4,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CompositeNavigationProp } from '@react-navigation/native';
-import { Heart, Filter, Search, X, BookOpen, MapPin } from 'lucide-react-native';
+import { Heart, Filter, Search, X, BookOpen, MapPin, ArrowLeftRight, GraduationCap } from 'lucide-react-native';
 import { Marquee } from '@animatereactnative/marquee';
 import { TenantStackParamList, TenantTabParamList } from '../../../navigation/types';
-import { BoardingHouseCard, ServiceSurveyModal, SearchFilterChips } from '../../../components/tenant';
+import { BoardingHouseCard, ServiceSurveyModal, SearchFilterChips, CompareModal } from '../../../components/tenant';
 import { DEFAULT_PRICE_RANGES } from '../../../components/tenant/SearchFilterChips';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
@@ -33,7 +33,8 @@ type SearchScreenNavigationProp = CompositeNavigationProp<
 export const SearchScreen: React.FC = () => {
   const isWeb = Platform.OS === 'web';
   const { width: windowWidth } = useWindowDimensions();
-  const isSmallScreen = windowWidth < 768;
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const { hasUnviewedFavorites } = useFavorites();
   const { isAuthenticated } = useAuthContext();
@@ -46,6 +47,9 @@ export const SearchScreen: React.FC = () => {
   const [selectedSchool, setSelectedSchool] = useState<string>('');
   const [authPromptVisible, setAuthPromptVisible] = useState(false);
   const [currentFeature, setCurrentFeature] = useState<FeatureType>('view_all_properties');
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedForCompare, setSelectedForCompare] = useState<BoardingHouse[]>([]);
+  const [showCompareModal, setShowCompareModal] = useState(false);
   const [properties, setProperties] = useState<BoardingHouse[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(false);
   const [propertiesError, setPropertiesError] = useState<string | null>(null);
@@ -87,13 +91,28 @@ export const SearchScreen: React.FC = () => {
 
   const handleSearch = (text: string) => {
     setSearchText(text);
-    
+
     // Track search if user typed something meaningful
     if (text.trim().length >= 2) {
       incrementTrigger('search_performed');
     }
   };
 
+  const handleToggleCompare = (boardingHouse: BoardingHouse) => {
+    setSelectedForCompare(prev => {
+      const isAlreadySelected = prev.some(p => p.id === boardingHouse.id);
+      if (isAlreadySelected) {
+        return prev.filter(p => p.id !== boardingHouse.id);
+      }
+      if (prev.length >= 3) return prev;
+      return [...prev, boardingHouse];
+    });
+  };
+
+  const handleExitCompareMode = () => {
+    setCompareMode(false);
+    setSelectedForCompare([]);
+  };
 
   React.useEffect(() => {
     let isMounted = true;
@@ -221,18 +240,73 @@ export const SearchScreen: React.FC = () => {
   const shouldShowResultsCount =
     (searchText.trim() !== '' || activeFilterCount() > 0) && filteredProperties.length > 0;
 
+  const renderHorizontalList = (items: BoardingHouse[]) => {
+    if (isWeb) {
+      return (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.horizontalListContainer}
+          nestedScrollEnabled
+        >
+          {items.map((item) => (
+            <View key={item.id} style={styles.horizontalCardWrapper}>
+              <BoardingHouseCard
+                boardingHouse={item}
+                onPress={() => handlePropertyPress(item)}
+                compareMode={compareMode}
+                isSelectedForCompare={selectedForCompare.some(p => p.id === item.id)}
+                onCompareToggle={handleToggleCompare}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      );
+    }
+    return (
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.horizontalCardWrapper}>
+            <BoardingHouseCard
+              boardingHouse={item}
+              onPress={() => handlePropertyPress(item)}
+              compareMode={compareMode}
+              isSelectedForCompare={selectedForCompare.some(p => p.id === item.id)}
+              onCompareToggle={handleToggleCompare}
+            />
+          </View>
+        )}
+        horizontal
+        pagingEnabled
+        snapToInterval={310}
+        decelerationRate="fast"
+        snapToAlignment="center"
+        contentContainerStyle={styles.horizontalListContainer}
+        showsHorizontalScrollIndicator={false}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+        style={styles.horizontalList}
+      />
+    );
+  };
+
   const renderPropertiesSection = () => {
     const allFilteredProperties = filteredProperties;
 
     const displayedProperties = isAuthenticated || hasReachedViewLimit || BETA_TESTING_MODE
-      ? allFilteredProperties 
+      ? allFilteredProperties
       : allFilteredProperties.slice(0, 7);
-    
+
+    const accreditedProperties = displayedProperties.filter(p => p.isAccredited);
+    const otherProperties = displayedProperties.filter(p => !p.isAccredited);
+
     return (
       <View>
         {/* Guest View Progress Banner */}
         <GuestViewProgressBanner />
-        
+
         {isLoadingProperties ? (
           <View style={styles.noResultsContainer}>
             <Text style={styles.noResultsTitle}>Loading properties...</Text>
@@ -249,42 +323,44 @@ export const SearchScreen: React.FC = () => {
               Try adjusting your search terms or price range to see more results.
             </Text>
           </View>
-        ) : isWeb ? (
+        ) : isMobile ? (
+          <View>
+            {accreditedProperties.length > 0 && (
+              <View style={styles.propertySectionGroup}>
+                <View style={styles.propertySectionHeader}>
+                  <GraduationCap size={18} color={colors.success} />
+                  <Text style={styles.propertySectionTitle}>Accredited</Text>
+                  <View style={styles.propertySectionDivider} />
+                </View>
+                {renderHorizontalList(accreditedProperties)}
+              </View>
+            )}
+            {otherProperties.length > 0 && (
+              <View style={styles.propertySectionGroup}>
+                <View style={styles.propertySectionHeader}>
+                  <Text style={styles.propertySectionTitle}>Other Properties</Text>
+                  <View style={styles.propertySectionDivider} />
+                </View>
+                {renderHorizontalList(otherProperties)}
+              </View>
+            )}
+          </View>
+        ) : (
           <View style={styles.webGrid}>
             {displayedProperties.map((item) => (
               <View key={item.id} style={[styles.webCardWrapper,
-                { minWidth: isSmallScreen ? '100%' : '25%'}
+                { minWidth: isTablet ? '50%' : '25%'}
               ]}>
                 <BoardingHouseCard
                   boardingHouse={item}
                   onPress={() => handlePropertyPress(item)}
+                  compareMode={compareMode}
+                  isSelectedForCompare={selectedForCompare.some(p => p.id === item.id)}
+                  onCompareToggle={handleToggleCompare}
                 />
               </View>
             ))}
           </View>
-        ) : (
-          <FlatList
-            data={displayedProperties}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.horizontalCardWrapper}>
-                <BoardingHouseCard
-                  boardingHouse={item}
-                  onPress={() => handlePropertyPress(item)}
-                />
-              </View>
-            )}
-            horizontal
-            pagingEnabled
-            snapToInterval={310}
-            decelerationRate="fast"
-            snapToAlignment="center"
-            contentContainerStyle={styles.horizontalListContainer}
-            showsHorizontalScrollIndicator={false}
-            nestedScrollEnabled
-            keyboardShouldPersistTaps="handled"
-            style={styles.horizontalList}
-          />
         )}
       </View>
     );
@@ -345,7 +421,7 @@ export const SearchScreen: React.FC = () => {
         </Marquee>
       </View>
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={isMobile}
         bounces={true}
         nestedScrollEnabled
         directionalLockEnabled
@@ -375,7 +451,7 @@ export const SearchScreen: React.FC = () => {
               />
             </View>
 
-            {isSmallScreen ? (
+            {isMobile ? (
               <View style={styles.mapButton}>
                 <TouchableOpacity
                   onPress={() => setShowFilters(true)}
@@ -398,7 +474,7 @@ export const SearchScreen: React.FC = () => {
           </View>
 
           <View style={styles.filterChipsRow}>
-            {!isSmallScreen ? (
+            {!isMobile ? (
               <SearchFilterChips
                 initialSelectedSchool={selectedSchool}
                 initialPriceRange={priceRange}
@@ -457,6 +533,44 @@ export const SearchScreen: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Floating compare button / bar */}
+      {!compareMode ? (
+        <TouchableOpacity
+          onPress={() => setCompareMode(true)}
+          activeOpacity={0.7}
+          style={styles.compareFloatingButton}
+        >
+          <ArrowLeftRight size={18} color={colors.white} />
+          <Text style={styles.compareFloatingButtonText}>Compare</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.compareFloatingBar}>
+          <TouchableOpacity onPress={handleExitCompareMode} activeOpacity={0.7}>
+            <Text style={styles.compareCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <Text style={styles.compareFloatingText}>
+            {selectedForCompare.length} of 3 selected
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowCompareModal(true)}
+            disabled={selectedForCompare.length < 2}
+            activeOpacity={0.7}
+            style={[
+              styles.compareButton,
+              selectedForCompare.length < 2 && styles.compareButtonDisabled,
+            ]}
+          >
+            <Text style={styles.compareButtonText}>Compare</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <CompareModal
+        visible={showCompareModal}
+        properties={selectedForCompare}
+        onClose={() => setShowCompareModal(false)}
+      />
 
       <Modal
         visible={showFilters}
@@ -686,6 +800,26 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 12,
     fontFamily: 'Figtree_700Bold',
+  },
+  propertySectionGroup: {
+    marginBottom: 8,
+  },
+  propertySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    gap: 8,
+  },
+  propertySectionTitle: {
+    fontSize: 15,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.gray[800],
+  },
+  propertySectionDivider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.gray[200],
   },
   horizontalListContainer: {
     paddingBottom: 20,
@@ -1079,5 +1213,71 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'center',
     textDecorationLine: 'underline',
+  },
+  compareFloatingButton: {
+    position: 'absolute',
+    bottom: 16,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 100,
+  },
+  compareFloatingButtonText: {
+    color: colors.white,
+    fontSize: 14,
+    fontFamily: 'Figtree_600SemiBold',
+  },
+  compareFloatingBar: {
+    position: 'absolute',
+    bottom: 16,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 999,
+    shadowColor: '#160909',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 100,
+  },
+  compareCancelText: {
+    color: colors.white,
+    fontSize: 13,
+    fontFamily: 'Figtree_500Medium',
+    textDecorationLine: 'underline',
+  },
+  compareFloatingText: {
+    color: colors.white,
+    fontSize: 13,
+    fontFamily: 'Figtree_600SemiBold',
+  },
+  compareButton: {
+    backgroundColor: colors.primaryDark,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  compareButtonDisabled: {
+    opacity: 0.5,
+  },
+  compareButtonText: {
+    color: colors.white,
+    fontSize: 13,
+    fontFamily: 'Figtree_600SemiBold',
   },
 });
