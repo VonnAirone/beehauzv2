@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { ArrowLeft, Heart, HeartOff } from 'lucide-react-native';
+import { Heart, HeartOff } from 'lucide-react-native';
+import { SubPageHeader } from '../../../components/common';
 import { BoardingHouseListCard } from '../../../components/tenant';
 import { useFavorites } from '../../../context/FavoritesContext';
 import { TenantStackParamList } from '../../../navigation/types';
@@ -58,22 +59,7 @@ export const FavoritesListScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <ArrowLeft size={24} color={colors.gray[700]} />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={[typography.textStyles.h3, styles.headerTitle]}>My Favorites</Text>
-          <Text style={[typography.textStyles.bodySmall, styles.headerSubtitle]}>
-            {favorites.length} {favorites.length === 1 ? 'property' : 'properties'}
-          </Text>
-        </View>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SubPageHeader title="My Favorites" />
 
       {/* Content */}
       {favorites.length > 0 ? (
@@ -100,9 +86,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 20,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],

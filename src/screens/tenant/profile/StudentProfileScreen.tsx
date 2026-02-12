@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensio
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { ArrowLeft, GraduationCap, MapPin, Phone, Mail, Heart, Calendar, Edit3, Pen } from 'lucide-react-native';
-import { Button, Card } from '../../../components/common';
+import { GraduationCap, MapPin, Phone, Mail, Heart, Calendar, Edit3, Pen } from 'lucide-react-native';
+import { Button, Card, SubPageHeader } from '../../../components/common';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useFavorites } from '../../../context/FavoritesContext';
 import { useUserType } from '../../../context/UserTypeContext';
@@ -56,13 +56,7 @@ export const StudentProfileScreen: React.FC = () => {
         width: isSmallScreen ? '95%' : '70%'
       }]}  edges={['top']}>
         
-      <View style={styles.header}>
-        <Text style={[typography.textStyles.h3, styles.headerTitle]}>My Profile</Text>
-        <TouchableOpacity style={styles.editIconButton} onPress={handleEditProfile}>
-            <Pen size={18} color={colors.white} />
-            <Text style={[typography.textStyles.button, {color: colors.white}]}>Edit Profile</Text>
-        </TouchableOpacity>
-      </View>
+      <SubPageHeader title="Profile" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Card style={styles.profileCard}>
@@ -200,7 +194,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    paddingVertical: 20
+    paddingVertical: 20,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[200],
   },
   backButton: {
     padding: 6,
@@ -208,6 +205,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.gray[900],
     fontFamily: 'Figtree_600SemiBold',
+  },
+  headerSpacer: {
+    width: 32,
   },
   content: {
     gap: 5,

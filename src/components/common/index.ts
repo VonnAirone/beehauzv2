@@ -15,3 +15,4 @@ export { ResponsiveGrid } from './ResponsiveGrid';
 export { DesktopSidebar } from './DesktopSidebar';
 export { Map } from './Map';
 export type { MapMarker, RouteInfo } from './Map';
+export { SubPageHeader } from './SubPageHeader';

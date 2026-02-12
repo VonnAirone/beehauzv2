@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import {
   User,
@@ -8,6 +8,7 @@ import {
   Shield,
   FileText,
   Home,
+  House,
   ChevronRight,
   LogOut,
   Info,
@@ -20,7 +21,7 @@ import { useAuthContext } from '../../../context/AuthContext';
 import { useUserType } from '../../../context/UserTypeContext';
 import { AuthPromptModal } from '../../../components/common';
 import { FeatureType } from '../../../utils/guestAccess';
-import { url } from 'zod';
+import { supabase } from '../../../services/supabase';
 
 type MoreScreenNav = StackNavigationProp<TenantStackParamList>;
 
@@ -33,10 +34,36 @@ interface MenuItem {
 
 export const MoreScreen: React.FC = () => {
   const navigation = useNavigation<MoreScreenNav>();
-  const { isAuthenticated, logout } = useAuthContext();
+  const { isAuthenticated, logout, user } = useAuthContext();
   const { clearUserType, setUserType } = useUserType();
   const [authPromptVisible, setAuthPromptVisible] = useState(false);
   const [authFeature, setAuthFeature] = useState<FeatureType>('access_profile');
+  const [hasActiveTenancy, setHasActiveTenancy] = useState(false);
+
+  const checkActiveTenancy = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
+      setHasActiveTenancy(false);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .is('date_left', null)
+      .limit(1)
+      .maybeSingle();
+
+    setHasActiveTenancy(!!data);
+  }, [isAuthenticated, user?.id]);
+
+  // Re-check when the screen comes back into focus (e.g. after move-out)
+  useFocusEffect(
+    useCallback(() => {
+      checkActiveTenancy();
+    }, [checkActiveTenancy])
+  );
 
   const handleAuthRequired = (feature: FeatureType, action: () => void) => {
     if (!isAuthenticated) {
@@ -78,6 +105,11 @@ export const MoreScreen: React.FC = () => {
   };
 
   const menuItems: MenuItem[] = [
+    ...(hasActiveTenancy ? [{
+      label: 'My Stay',
+      icon: <House size={22} color={colors.primary} />,
+      onPress: () => navigation.navigate('MyStay'),
+    }] : []),
     {
       label: 'Profile',
       icon: <User size={22} color={colors.gray[700]} />,

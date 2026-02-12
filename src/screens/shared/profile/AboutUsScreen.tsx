@@ -1,27 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Building2, Users, Calendar, Heart, Home, Mail, MapPin } from 'lucide-react-native';
-import { Card } from '../../../components/common';
+import { Building2, Users, Calendar, Heart, Home, Mail, MapPin } from 'lucide-react-native';
+import { Card, SubPageHeader } from '../../../components/common';
 import { typography } from '../../../styles/typography';
 import { colors } from '../../../styles/colors';
 
 export const AboutUsScreen: React.FC = () => {
-  const navigation = useNavigation();
-
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <ArrowLeft size={24} color={colors.gray[700]} />
-        </TouchableOpacity>
-        <Text style={[typography.textStyles.h5, styles.headerTitle]}>About Us</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SubPageHeader title="About Us" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Beehauz Logo/Brand Section */}

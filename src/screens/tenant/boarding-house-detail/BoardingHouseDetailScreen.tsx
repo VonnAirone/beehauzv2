@@ -47,6 +47,7 @@ export const BoardingHouseDetailScreen: React.FC = () => {
   const [bookingError, setBookingError] = React.useState<string | null>(null);
   const [isSubmittingBooking, setIsSubmittingBooking] = React.useState(false);
   const [pendingBooking, setPendingBooking] = React.useState<{ propertyName: string } | null>(null);
+  const [activeTenancy, setActiveTenancy] = React.useState<{ propertyName: string } | null>(null);
   const { width: windowWidth } = useWindowDimensions();
   const isSmallScreen = windowWidth < 768;
   const isWeb = Platform.OS === 'web';
@@ -83,9 +84,33 @@ export const BoardingHouseDetailScreen: React.FC = () => {
     }
   }, [isAuthenticated, user?.id]);
 
+  const checkActiveTenancy = React.useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
+      setActiveTenancy(null);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('tenants')
+      .select('id, properties:property_id(name)')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .is('date_left', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      const propertyName = (data.properties as any)?.name || 'a property';
+      setActiveTenancy({ propertyName });
+    } else {
+      setActiveTenancy(null);
+    }
+  }, [isAuthenticated, user?.id]);
+
   React.useEffect(() => {
     checkPendingBooking();
-  }, [checkPendingBooking]);
+    checkActiveTenancy();
+  }, [checkPendingBooking, checkActiveTenancy]);
 
   // Track property view for guests (disabled during beta testing) and rating system
   React.useEffect(() => {
@@ -698,7 +723,14 @@ export const BoardingHouseDetailScreen: React.FC = () => {
 
       {/* Fixed Book Now Button */}
       <SafeAreaView edges={['bottom']} style={styles.bookingContainer}>
-        {pendingBooking ? (
+        {activeTenancy ? (
+          <View style={styles.pendingBookingBar}>
+            <Info size={16} color={colors.gray[600]} />
+            <Text style={styles.pendingBookingText}>
+              You are currently staying in a boarding house.
+            </Text>
+          </View>
+        ) : pendingBooking ? (
           <View style={styles.pendingBookingBar}>
             <Info size={16} color={colors.gray[600]} />
             <Text style={styles.pendingBookingText}>
@@ -829,8 +861,8 @@ export const BoardingHouseDetailScreen: React.FC = () => {
               </View>
               <Text style={styles.bookingCheckboxText}>
                 I have read and agreed to the{' '}
-                <Text style={styles.bookingLinkText}>Terms and Conditions</Text>, and{' '}
-                <Text style={styles.bookingLinkText}>Privacy Policy</Text>.
+                <Text style={styles.bookingLinkText} onPress={() => { setBookingModalVisible(false); navigation.navigate('TermsAndConditions'); }}>Terms and Conditions</Text>, and{' '}
+                <Text style={styles.bookingLinkText} onPress={() => { setBookingModalVisible(false); navigation.navigate('PrivacyPolicy'); }}>Privacy Policy</Text>.
               </Text>
             </TouchableOpacity>
 

@@ -15,6 +15,7 @@ import { BlogDetailScreen } from '../screens/tenant/blog';
 import { FavoritesListScreen } from '../screens/tenant/favorites';
 import { StudentProfileScreen } from '../screens/tenant/profile/StudentProfileScreen';
 import { MoreScreen } from '../screens/tenant/more/MoreScreen';
+import { MyStayScreen } from '../screens/tenant/my-stay/MyStayScreen';
 import { PersonalInformationScreen, EditProfileScreen, AboutUsScreen } from '../screens/shared/profile';
 import { PrivacyPolicyScreen } from '../screens/shared/PrivacyPolicyScreen';
 import { TermsAndConditionsScreen } from '../screens/shared/TermsAndConditionsScreen';
@@ -266,6 +267,7 @@ export const TenantNavigator: React.FC = () => {
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="AboutUs" component={AboutUsScreen} />
       <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
+      <Stack.Screen name="MyStay" component={MyStayScreen} />
     </Stack.Navigator>
   );
 };

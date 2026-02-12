@@ -1,30 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { TouchableOpacity } from 'react-native';
-import { ArrowLeft } from 'lucide-react-native';
+import { SubPageHeader } from '../../components/common';
 import { colors } from '../../styles/colors';
 import { typography } from '../../styles/typography';
 import { spacing } from '../../styles/spacing';
 
 export const TermsAndConditionsScreen: React.FC = () => {
-  const navigation = useNavigation();
-
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => navigation.goBack()}
-        >
-          <ArrowLeft size={24} color={colors.gray[700]} />
-        </TouchableOpacity>
-        <Text style={[typography.textStyles.h5, styles.title]}>
-          Terms and Conditions
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <SubPageHeader title="Terms and Conditions" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[typography.textStyles.bodySmall, styles.lastUpdated]}>

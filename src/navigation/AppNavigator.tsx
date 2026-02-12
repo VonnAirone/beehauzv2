@@ -28,39 +28,35 @@ export const AppNavigator: React.FC = () => {
         },
       },
 
-      // Give Main its own group, but do NOT let multiple children claim ''
       Main: {
         path: '',
         screens: {
-          // Tenant owns the root
+
           TenantTabs: {
             path: '',
             screens: {
-              Search: '',              // /
-              Map: 'map',              // /map
-              MyBookings: 'bookings',  // /bookings
+              Search: '',           
+              Map: 'map',             
+              MyBookings: 'bookings',
               Notifications: 'notifications',
               More: 'more',
             },
           },
 
-          // Owner is under /owner
           OwnerTabs: {
             path: 'owner',
             screens: {
-              Dashboard: 'dashboard',   // /owner/dashboard
-              Properties: 'properties', // /owner/properties
-              Payments: 'payments',     // /owner/payments
-              More: 'more',             // /owner/more (no conflict with tenant now)
+              Dashboard: 'dashboard', 
+              Properties: 'properties',
+              Payments: 'payments',     
+              More: 'more',             
             },
           },
 
-          // Keep owner profile relative to owner base to avoid weird overlaps
           Profile: {
             path: 'owner/profile',
           },
 
-          // Other shared routes
           MapView: 'map-view',
           BoardingHouseDetail: 'property',
           BlogDetail: 'blog',
@@ -72,14 +68,12 @@ export const AppNavigator: React.FC = () => {
           AboutUs: 'about',
           TermsAndConditions: 'terms-and-conditions',
 
-          // Admin screens inside Main (if you really want them here)
           Tenants: 'tenants',
           Owner: 'owners',
           Universities: 'universities',
         },
       },
 
-      // Admin gate at /admin
       Admin: 'admin',
     },
   },
@@ -96,9 +90,6 @@ export const AppNavigator: React.FC = () => {
   const { userType, clearUserType, setPendingAuthAction, setUserType } = useUserType();
   const [logoNavigatePending, setLogoNavigatePending] = React.useState(false);
 
-  // Determine if we should show auth or main app
-  // Show auth only when explicitly requested (userType is null)
-  // Otherwise, show main app with guest access enabled
   const shouldShowAuth = !isLoading && userType === null && !isAuthenticated;
   const currentUserType = user?.userType || userType || 'tenant';
   
@@ -149,6 +140,21 @@ export const AppNavigator: React.FC = () => {
     }
   }, [user?.userType, userType, setUserType]);
 
+  const [currentRoute, setCurrentRoute] = React.useState<string>('');
+
+  const hideHeaderRoutes = [
+    'StudentProfile',
+    'PersonalInformation',
+    'EditProfile',
+    'FavoritesList',
+    'PrivacyPolicy',
+    'AboutUs',
+    'TermsAndConditions',
+    'MyStay',
+  ];
+
+  const shouldHideHeader = hideHeaderRoutes.includes(currentRoute);
+
   const displayName = user?.fullName || user?.email || 'Profile';
 
   if (isLoading) {
@@ -195,29 +201,40 @@ export const AppNavigator: React.FC = () => {
   };
 
   return (
-    <NavigationContainer theme={navTheme} ref={navigationRef} linking={linking}>
+    <NavigationContainer
+      theme={navTheme}
+      ref={navigationRef}
+      linking={linking}
+      onStateChange={() => {
+        if (!navigationRef.isReady()) return;
+        const route = navigationRef.getCurrentRoute();
+        setCurrentRoute(route?.name ?? '');
+      }}
+    >
       <View style={styles.appContainer}>
-        <View style={styles.appHeader}>
-          <TouchableOpacity onPress={handleLogoPress}>
-            <Image source={require('../assets/logo-wordmark.png')} style={styles.logoImage} />
-          </TouchableOpacity>
-          
-          {isLoading ? (
-            <View style={styles.headerLoading}>
-              <ActivityIndicator size="small" color={colors.primary} />
-            </View>
-          ) : isAuthenticated ? (
-            <TouchableOpacity style={styles.profileBadge} onPress={handleProfilePress}>
-              <Text style={styles.profileName} numberOfLines={1}>
-                {displayName}
-              </Text>
+        {!shouldHideHeader && (
+          <View style={styles.appHeader}>
+            <TouchableOpacity onPress={handleLogoPress}>
+              <Image source={require('../assets/logo-wordmark.png')} style={styles.logoImage} />
             </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-              <Text style={styles.loginButtonText}>Login</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+
+            {isLoading ? (
+              <View style={styles.headerLoading}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : isAuthenticated ? (
+              <TouchableOpacity style={styles.profileBadge} onPress={handleProfilePress}>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {displayName}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
+                <Text style={styles.loginButtonText}>Login</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         <View style={styles.appContent}>
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             {shouldShowAuth ? (

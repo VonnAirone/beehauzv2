@@ -75,6 +75,7 @@ export type TenantStackParamList = {
   Gallery: { houseId: string };
   Booking: { houseId: string };
   BookingDetail: { bookingId: string };
+  MyStay: undefined;
   Reviews: undefined;
   Messages: undefined;
   Chat: { chatId: string };
