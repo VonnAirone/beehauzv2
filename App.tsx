@@ -8,7 +8,7 @@ import { FavoritesProvider } from './src/context/FavoritesContext';
 import { GuestTrackingProvider } from './src/context/GuestTrackingContext';
 import { AppRatingProvider, useAppRating } from './src/context/AppRatingContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
-import { AppRatingWrapper, HiddenAdminAccess, ErrorBoundary } from './src/components/common';
+import { HiddenAdminAccess, ErrorBoundary } from './src/components/common';
 import { useFigtreeFonts } from './src/hooks/useFonts';
 
 // Component to track app opens
@@ -49,8 +49,8 @@ export default function App() {
                     {/* Track app opens */}
                     <AppOpenTracker />
                     
-                    {/* Global App Rating Modal */}
-                    <AppRatingWrapper />
+                    {/* Global App Rating Modal - temporarily disabled */}
+                    {/* <AppRatingWrapper /> */}
                   </HiddenAdminAccess>
                 </GuestTrackingProvider>
               </FavoritesProvider>

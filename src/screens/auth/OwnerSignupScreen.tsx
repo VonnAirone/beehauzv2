@@ -168,7 +168,7 @@ export const OwnerSignupScreen: React.FC = () => {
         >
           <View style={styles.card}>
             <View style={styles.header}>
-              <Text style={[typography.textStyles.h1, styles.title]}>
+              <Text style={[typography.textStyles.h2, styles.title]}>
                 Create Owner Account
               </Text>
               <Text style={[typography.textStyles.body, styles.subtitle]}>
@@ -265,6 +265,13 @@ export const OwnerSignupScreen: React.FC = () => {
                 <Text style={styles.secondaryActionText}>Log in</Text>
               </TouchableOpacity>
             </View>
+
+            <View style={styles.ownerPrompt}>
+              <Text style={styles.ownerPromptText}>Are you a student?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.ownerPromptLink}>Create an account</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -292,23 +299,16 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 480,
-    backgroundColor: colors.white,
     borderRadius: 16,
-    paddingHorizontal: 40,
-    paddingVertical: spacing[6],
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   header: {
     alignItems: 'center',
     marginBottom: spacing[8],
   },
   title: {
+    textAlign: 'center',
     color: colors.black,
     marginBottom: spacing[3],
   },
@@ -357,6 +357,20 @@ const styles = StyleSheet.create({
   secondaryActionText: {
     color: colors.primary,
     fontSize: 16,
+    fontWeight: '600',
+  },
+  ownerPrompt: {
+    marginTop: spacing[6],
+    alignItems: 'center',
+    gap: 4,
+  },
+  ownerPromptText: {
+    color: colors.gray[600],
+    fontSize: 13,
+  },
+  ownerPromptLink: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

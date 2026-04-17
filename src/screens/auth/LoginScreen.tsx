@@ -151,7 +151,7 @@ export const LoginScreen: React.FC = () => {
         <View style={styles.page}>
           <View style={styles.card}>
             <View style={styles.header}>
-              <Text style={[typography.textStyles.h1, styles.title]}>
+              <Text style={[typography.textStyles.h2, styles.title]}>
                 Welcome Back
               </Text>
               <Text style={[typography.textStyles.body, styles.subtitle]}>
@@ -233,7 +233,6 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
   },
   keyboardAvoid: {
     flex: 1,
@@ -248,17 +247,9 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 480,
-    backgroundColor: colors.white,
     borderRadius: 16,
-    paddingHorizontal: 40,
-    paddingVertical: 40,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   closeButton: {
     position: 'absolute',

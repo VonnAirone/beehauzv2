@@ -182,7 +182,7 @@ export const SignupScreen: React.FC = () => {
           <View style={styles.card}>
             
             <View style={styles.header}>
-              <Text style={[typography.textStyles.h1, styles.title]}>
+              <Text style={[typography.textStyles.h2, styles.title]}>
                 Create Account
               </Text>
               <Text style={[typography.textStyles.body, styles.subtitle]}>
@@ -280,7 +280,7 @@ export const SignupScreen: React.FC = () => {
 
             <View style={styles.ownerPrompt}>
               <Text style={styles.ownerPromptText}>Are you a property owner?</Text>
-              <TouchableOpacity onPress={handleOwnerSignup}>
+              <TouchableOpacity onPress={() => navigation.navigate('OwnerSignup')}>
                 <Text style={styles.ownerPromptLink}>Create an owner account</Text>
               </TouchableOpacity>
             </View>
@@ -311,17 +311,9 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 480,
-    backgroundColor: colors.white,
     borderRadius: 16,
-    paddingHorizontal: 40,
-    paddingVertical: 40,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   closeButton: {
     position: 'absolute',

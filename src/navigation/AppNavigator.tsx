@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthNavigator } from './AuthNavigator';
@@ -10,6 +11,7 @@ import { RootStackParamList } from './types';
 import { useAuthContext } from '../context/AuthContext';
 import { useUserType } from '../context/UserTypeContext';
 import { colors } from '../styles/colors';
+import { NotificationsModal } from '../components/common/NotificationsModal';
 
 const Stack = createStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -47,7 +49,7 @@ export const AppNavigator: React.FC = () => {
             path: 'owner',
             screens: {
               Dashboard: 'dashboard', 
-              Properties: 'properties',
+              BookingRequests: 'booking-requests',
               Payments: 'payments',     
               More: 'more',             
             },
@@ -89,6 +91,7 @@ export const AppNavigator: React.FC = () => {
   const { isAuthenticated, user, isLoading } = useAuthContext();
   const { userType, clearUserType, setPendingAuthAction, setUserType } = useUserType();
   const [logoNavigatePending, setLogoNavigatePending] = React.useState(false);
+  const [notificationsVisible, setNotificationsVisible] = React.useState(false);
 
   const shouldShowAuth = !isLoading && userType === null && !isAuthenticated;
   const currentUserType = user?.userType || userType || 'tenant';
@@ -110,21 +113,6 @@ export const AppNavigator: React.FC = () => {
     navigationRef.navigate({ name: 'Main', params: undefined } as never);
   };
 
-  const handleProfilePress = () => {
-    if (!navigationRef.isReady()) return;
-
-    if (currentUserType === 'owner') {
-      navigationRef.navigate({ name: 'Main', params: { screen: 'Profile' } } as never);
-      return;
-    }
-
-    if (currentUserType === 'admin') {
-      navigationRef.navigate({ name: 'Main', params: { screen: 'Owner' } } as never);
-      return;
-    }
-
-    navigationRef.navigate({ name: 'Main', params: { screen: 'StudentProfile' } } as never);
-  };
 
   React.useEffect(() => {
     if (!logoNavigatePending || shouldShowAuth || !navigationRef.isReady()) return;
@@ -155,7 +143,6 @@ export const AppNavigator: React.FC = () => {
 
   const shouldHideHeader = hideHeaderRoutes.includes(currentRoute);
 
-  const displayName = user?.fullName || user?.email || 'Profile';
 
   if (isLoading) {
     return (
@@ -201,6 +188,7 @@ export const AppNavigator: React.FC = () => {
   };
 
   return (
+    <>
     <NavigationContainer
       theme={navTheme}
       ref={navigationRef}
@@ -223,10 +211,8 @@ export const AppNavigator: React.FC = () => {
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : isAuthenticated ? (
-              <TouchableOpacity style={styles.profileBadge} onPress={handleProfilePress}>
-                <Text style={styles.profileName} numberOfLines={1}>
-                  {displayName}
-                </Text>
+              <TouchableOpacity onPress={() => setNotificationsVisible(true)}>
+                <Bell size={24} color={colors.gray[700]} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
@@ -256,6 +242,11 @@ export const AppNavigator: React.FC = () => {
         </View>
       </View>
     </NavigationContainer>
+    <NotificationsModal
+      visible={notificationsVisible}
+      onClose={() => setNotificationsVisible(false)}
+    />
+  </>
   );
 };
 

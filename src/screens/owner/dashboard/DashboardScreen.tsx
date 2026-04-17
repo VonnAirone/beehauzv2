@@ -406,8 +406,8 @@ export const OwnerDashboardScreen: React.FC = () => {
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[typography.textStyles.h2, styles.title]}>Owner Dashboard</Text>
-      <Text style={[typography.textStyles.body, styles.subtitle]}>
+      <Text style={[typography.textStyles.h4, styles.title]}>Owner Dashboard</Text>
+      <Text style={[typography.textStyles.bodySmall, styles.subtitle]}>
         Welcome back! Here's your property overview.
       </Text>
 
@@ -425,7 +425,10 @@ export const OwnerDashboardScreen: React.FC = () => {
           <View style={styles.tableCard}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Tenants</Text>
-              <TouchableOpacity style={styles.inviteButton} onPress={handleOpenInvite}>
+
+              <TouchableOpacity style={styles.inviteButton} 
+              // onPress={handleOpenInvite}
+              >
                 <Text style={styles.inviteButtonText}>Invite a user</Text>
                 <Plus size={16} color={'white'}/>
               </TouchableOpacity>
@@ -490,33 +493,6 @@ export const OwnerDashboardScreen: React.FC = () => {
                 ))}
               </>
             )}
-          </View>
-        </View>
-
-        <View style={[styles.sideColumn, isCompact && styles.sideColumnCompact]}>
-          <View style={styles.notificationCard}>
-            <Text style={[typography.textStyles.h4, styles.sectionTitle]}>Notifications</Text>
-            {isLoadingNotifications && (
-              <Text style={styles.notificationEmpty}>Loading notifications...</Text>
-            )}
-            {!isLoadingNotifications && notifications.length === 0 && (
-              <Text style={styles.notificationEmpty}>No notifications yet.</Text>
-            )}
-            {!isLoadingNotifications && notifications.map((note) => (
-              <TouchableOpacity
-                key={note.id}
-                style={[styles.notificationItem, note.related_request_id && styles.notificationClickable]}
-                onPress={() => handleNotificationPress(note)}
-                disabled={!note.related_request_id}
-                activeOpacity={0.7}
-              >
-                <View style={styles.notificationText}>
-                  <Text style={styles.notificationTitle}>{note.title}</Text>
-                  {!!note.body && <Text style={styles.notificationSubtitle}>{note.body}</Text>}
-                </View>
-                <Text style={styles.notificationTime}>{formatTimeAgo(note.created_at)}</Text>
-              </TouchableOpacity>
-            ))}
           </View>
         </View>
       </View>

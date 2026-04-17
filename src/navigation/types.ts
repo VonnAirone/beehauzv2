@@ -16,7 +16,7 @@ export type AuthStackParamList = {
 
 export type OwnerTabParamList = {
   Dashboard: undefined;
-  Properties: undefined;
+  BookingRequests: undefined;
   Payments: undefined;
   More: undefined;
 };

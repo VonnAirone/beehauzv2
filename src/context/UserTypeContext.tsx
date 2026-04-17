@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode, useState } from 'react';
 
 type UserType = 'owner' | 'tenant' | 'admin';
-type AuthAction = 'login' | 'signup' | null;
+type AuthAction = 'login' | 'signup' | 'ownerSignup' | null;
 
 interface UserTypeContextType {
   userType: UserType | null;

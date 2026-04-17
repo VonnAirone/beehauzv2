@@ -98,15 +98,32 @@ export const MyStayScreen: React.FC = () => {
           .filter((p: any) => p?.due_date)
           .sort((a: any, b: any) => String(b.due_date).localeCompare(String(a.due_date)));
 
-        setPayments(
-          sorted.map((p: any) => ({
-            id: p.id,
-            amount: p.amount || 0,
-            dueDate: p.due_date,
-            paidAt: p.paid_at,
-            status: p.status,
-          }))
-        );
+        const mappedPayments = sorted.map((p: any) => ({
+          id: p.id,
+          amount: p.amount || 0,
+          dueDate: p.due_date,
+          paidAt: p.paid_at,
+          status: p.status,
+        }));
+
+        // If the latest payment is paid, show next month's upcoming card
+        const latestPayment = mappedPayments[0];
+        if (latestPayment && latestPayment.status === 'paid' && data.date_started) {
+          const moveInDay = new Date(data.date_started).getDate();
+          const latestDue = new Date(latestPayment.dueDate);
+          const nextMonth = new Date(latestDue.getFullYear(), latestDue.getMonth() + 1, moveInDay);
+          const nextDueDate = nextMonth.toISOString().split('T')[0];
+
+          mappedPayments.unshift({
+            id: `upcoming-${nextDueDate}`,
+            amount: latestPayment.amount,
+            dueDate: nextDueDate,
+            paidAt: null,
+            status: 'due',
+          });
+        }
+
+        setPayments(mappedPayments);
       } else {
         setTenancy(null);
         setPayments([]);

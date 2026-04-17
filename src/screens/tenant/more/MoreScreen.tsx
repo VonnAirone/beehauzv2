@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Linking } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import {
@@ -39,6 +39,7 @@ export const MoreScreen: React.FC = () => {
   const [authPromptVisible, setAuthPromptVisible] = useState(false);
   const [authFeature, setAuthFeature] = useState<FeatureType>('access_profile');
   const [hasActiveTenancy, setHasActiveTenancy] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const checkActiveTenancy = useCallback(async () => {
     if (!isAuthenticated || !user?.id) {
@@ -74,34 +75,14 @@ export const MoreScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          clearUserType();
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    setLogoutModalVisible(false);
+    await logout();
+    clearUserType();
   };
 
   const handleSwitchToOwner = () => {
-    Alert.alert(
-      'Switch to Owner',
-      'You will be redirected to the owner sign-up page to register your property.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          onPress: () => {
-            clearUserType();
-          },
-        },
-      ]
-    );
+    clearUserType();
   };
 
   const menuItems: MenuItem[] = [
@@ -211,7 +192,7 @@ export const MoreScreen: React.FC = () => {
         </View>
 
         {isAuthenticated && (
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.6}>
+          <TouchableOpacity style={styles.logoutButton} onPress={() => setLogoutModalVisible(true)} activeOpacity={0.6}>
             <LogOut size={20} color={colors.error} />
             <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
@@ -233,6 +214,37 @@ export const MoreScreen: React.FC = () => {
           clearUserType();
         }}
       />
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={logoutModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Log Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to log out?</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setLogoutModalVisible(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalLogoutButton}
+                onPress={handleLogout}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalLogoutText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -322,5 +334,63 @@ const styles = StyleSheet.create({
     fontFamily: 'Figtree_400Regular',
     color: colors.gray[400],
     marginTop: 24,
+  },
+
+  // Logout Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Figtree_700Bold',
+    color: colors.gray[900],
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 14,
+    fontFamily: 'Figtree_400Regular',
+    color: colors.gray[600],
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.gray[600],
+  },
+  modalLogoutButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+  },
+  modalLogoutText: {
+    fontSize: 15,
+    fontFamily: 'Figtree_600SemiBold',
+    color: colors.white,
   },
 });

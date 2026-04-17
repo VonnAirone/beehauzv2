@@ -4,10 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { LayoutDashboard, Home, CircleDollarSign, Ellipsis } from 'lucide-react-native';
+import { LayoutDashboard, Calendar, CircleDollarSign, Ellipsis } from 'lucide-react-native';
 import { OwnerStackParamList, OwnerTabParamList } from './types';
 import { OwnerDashboardScreen } from '../screens/owner/dashboard/DashboardScreen';
-import { PropertiesScreen } from '../screens/owner/properties/PropertiesScreen';
+import { BookingRequestsScreen } from '../screens/owner/bookings/BookingRequestsScreen';
 import { PaymentsScreen } from '../screens/owner/payments/PaymentsScreen';
 import { OwnerMoreScreen } from '../screens/owner/more/OwnerMoreScreen';
 import { ProfileScreen } from '../screens/shared/profile/ProfileScreen';
@@ -38,11 +38,11 @@ const OwnerTabs: React.FC = () => {
       ),
     },
     {
-      name: 'Properties',
-      label: 'Properties',
+      name: 'BookingRequests',
+      label: 'Bookings',
       icon: (
-        <Home
-          color={activeTab === 'Properties' ? colors.primary : colors.gray[600]}
+        <Calendar
+          color={activeTab === 'BookingRequests' ? colors.primary : colors.gray[600]}
           size={20}
         />
       ),
@@ -113,12 +113,12 @@ const OwnerTabs: React.FC = () => {
             }}
           />
           <Tab.Screen
-            name="Properties"
-            component={PropertiesScreen}
+            name="BookingRequests"
+            component={BookingRequestsScreen}
             options={{
-              tabBarLabel: 'Properties',
+              tabBarLabel: 'Bookings',
               tabBarIcon: ({ color, size }) => (
-                <Home color={color} size={size} />
+                <Calendar color={color} size={size} />
               ),
             }}
           />

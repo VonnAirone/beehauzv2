@@ -27,6 +27,7 @@ import { spacing, borderRadius, shadows } from '../../../styles/spacing';
 import { supabase } from '../../../services/supabase';
 import { useAuthContext } from '../../../context/AuthContext';
 import { useResponsive } from '../../../hooks/useResponsive';
+import { SupportModal } from '../../../components/common';
 
 // ─── Types ───────────────────────────────────────────────────
 interface Property {
@@ -78,7 +79,6 @@ export const PaymentsScreen: React.FC = () => {
   const { user } = useAuthContext();
   const { isMobile, isTablet, isDesktop } = useResponsive();
   const isCompact = isMobile || isTablet;
-
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<string>('all');
   const [showPropertyPicker, setShowPropertyPicker] = useState(false);
@@ -92,6 +92,8 @@ export const PaymentsScreen: React.FC = () => {
   const [selectedTenant, setSelectedTenant] = useState<TenantPayment | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showConfirmPaid, setShowConfirmPaid] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   // Fetch properties
   const fetchProperties = useCallback(async () => {
@@ -221,6 +223,7 @@ export const PaymentsScreen: React.FC = () => {
 
       setShowStatusModal(false);
       setSelectedTenant(null);
+      setShowConfirmPaid(false);
       fetchTenantPayments(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to update status.';
@@ -297,7 +300,9 @@ export const PaymentsScreen: React.FC = () => {
       </View>
 
       <View style={styles.cardFooter}>
-        <Text style={styles.cardUpdateHint}>Tap to update status</Text>
+        <Text style={styles.cardUpdateHint}>
+          {tenant.paymentStatus === 'paid' ? 'Tap to view details' : 'Tap to update status'}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -323,81 +328,141 @@ export const PaymentsScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
+  // ─── Close status modal helper ─────────────────────────────
+  const closeStatusModal = () => {
+    setShowStatusModal(false);
+    setSelectedTenant(null);
+    setShowConfirmPaid(false);
+  };
+
   // ─── Render Status Update Modal ────────────────────────────
-  const renderStatusModal = () => (
-    <Modal
-      visible={showStatusModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => { setShowStatusModal(false); setSelectedTenant(null); }}
-    >
-      <TouchableOpacity
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => { setShowStatusModal(false); setSelectedTenant(null); }}
+  const renderStatusModal = () => {
+    const isAlreadyPaid = selectedTenant?.paymentStatus === 'paid';
+
+    return (
+      <Modal
+        visible={showStatusModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeStatusModal}
       >
         <TouchableOpacity
+          style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
-          style={[styles.modalContent, isCompact && styles.modalContentCompact]}
+          onPress={closeStatusModal}
         >
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Update Payment Status</Text>
-            <TouchableOpacity onPress={() => { setShowStatusModal(false); setSelectedTenant(null); }}>
-              <X size={22} color={colors.gray[500]} />
-            </TouchableOpacity>
-          </View>
-
-          {selectedTenant && (
-            <View style={styles.modalTenantInfo}>
-              <Text style={styles.modalTenantName}>{selectedTenant.tenantName}</Text>
-              <Text style={styles.modalTenantDetail}>{selectedTenant.propertyName}</Text>
-              {selectedTenant.dueDate && (
-                <Text style={styles.modalTenantDetail}>Due date: {formatDate(selectedTenant.dueDate)}</Text>
-              )}
-              <View style={styles.modalCurrentStatus}>
-                <Text style={styles.modalCurrentLabel}>Current:</Text>
-                {renderStatusBadge(selectedTenant.paymentStatus, true)}
-              </View>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, isCompact && styles.modalContentCompact]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {showConfirmPaid ? 'Confirm Payment' : isAlreadyPaid ? 'Payment Status' : 'Update Payment Status'}
+              </Text>
+              <TouchableOpacity onPress={closeStatusModal}>
+                <X size={22} color={colors.gray[500]} />
+              </TouchableOpacity>
             </View>
-          )}
 
-          <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={[styles.statusOption, styles.statusOptionPaid]}
-              onPress={() => handleUpdateStatus('paid')}
-              disabled={isUpdating}
-            >
-              <CheckCircle size={20} color="#0F8A5F" />
-              <Text style={[styles.statusOptionText, { color: '#0F8A5F' }]}>Paid</Text>
-            </TouchableOpacity>
+            {selectedTenant && (
+              <View style={styles.modalTenantInfo}>
+                <Text style={styles.modalTenantName}>{selectedTenant.tenantName}</Text>
+                <Text style={styles.modalTenantDetail}>{selectedTenant.propertyName}</Text>
+                {selectedTenant.dueDate && (
+                  <Text style={styles.modalTenantDetail}>Due date: {formatDate(selectedTenant.dueDate)}</Text>
+                )}
+                <View style={styles.modalCurrentStatus}>
+                  <Text style={styles.modalCurrentLabel}>Current:</Text>
+                  {renderStatusBadge(selectedTenant.paymentStatus, true)}
+                </View>
+              </View>
+            )}
 
-            <TouchableOpacity
-              style={[styles.statusOption, styles.statusOptionPending]}
-              onPress={() => handleUpdateStatus('pending')}
-              disabled={isUpdating}
-            >
-              <Clock size={20} color="#9A6B00" />
-              <Text style={[styles.statusOptionText, { color: '#9A6B00' }]}>Pending</Text>
-            </TouchableOpacity>
+            {/* Confirmation step for marking as paid */}
+            {showConfirmPaid && (
+              <View style={styles.modalActions}>
+                <Text style={styles.confirmText}>
+                  Are you sure you want to mark this payment as paid?
+                </Text>
+                <TouchableOpacity
+                  style={[styles.statusOption, styles.statusOptionPaid]}
+                  onPress={() => handleUpdateStatus('paid')}
+                  disabled={isUpdating}
+                >
+                  <CheckCircle size={20} color="#0F8A5F" />
+                  <Text style={[styles.statusOptionText, { color: '#0F8A5F' }]}>Yes, Mark as Paid</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.statusOption, { backgroundColor: colors.gray[50], borderColor: colors.gray[200] }]}
+                  onPress={() => setShowConfirmPaid(false)}
+                  disabled={isUpdating}
+                >
+                  <X size={20} color={colors.gray[600]} />
+                  <Text style={[styles.statusOptionText, { color: colors.gray[600] }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-            <TouchableOpacity
-              style={[styles.statusOption, styles.statusOptionDue]}
-              onPress={() => handleUpdateStatus('due')}
-              disabled={isUpdating}
-            >
-              <AlertTriangle size={20} color="#B42318" />
-              <Text style={[styles.statusOptionText, { color: '#B42318' }]}>Due</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Already paid — no action buttons */}
+            {!showConfirmPaid && isAlreadyPaid && (
+              <View style={styles.modalActions}>
+                <View style={styles.paidMessage}>
+                  <CheckCircle size={20} color="#0F8A5F" />
+                  <Text style={styles.paidMessageText}>
+                    This payment has been marked as paid{selectedTenant?.paidAt ? ` on ${formatDate(selectedTenant.paidAt)}` : ''}.
+                  </Text>
+                </View>
+                <Text style={[typography.textStyles.caption, styles.paidSupportText]}>
+                  If this wasn't you, please reach out to{' '}
+                  <Text
+                    onPress={() => { closeStatusModal(); setShowSupportModal(true); }}
+                    style={{ color: colors.primary }}
+                  >support.</Text>
+                </Text>
+              </View>
+            )}
 
-          {isUpdating && (
-            <ActivityIndicator style={{ marginTop: 12 }} color={colors.primary} />
-          )}
+            {/* Status buttons — only when not paid and not confirming */}
+            {!showConfirmPaid && !isAlreadyPaid && (
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.statusOption, styles.statusOptionPaid]}
+                  onPress={() => setShowConfirmPaid(true)}
+                  disabled={isUpdating}
+                >
+                  <CheckCircle size={20} color="#0F8A5F" />
+                  <Text style={[styles.statusOptionText, { color: '#0F8A5F' }]}>Paid</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.statusOption, styles.statusOptionPending]}
+                  onPress={() => handleUpdateStatus('pending')}
+                  disabled={isUpdating}
+                >
+                  <Clock size={20} color="#9A6B00" />
+                  <Text style={[styles.statusOptionText, { color: '#9A6B00' }]}>Pending</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.statusOption, styles.statusOptionDue]}
+                  onPress={() => handleUpdateStatus('due')}
+                  disabled={isUpdating}
+                >
+                  <AlertTriangle size={20} color="#B42318" />
+                  <Text style={[styles.statusOptionText, { color: '#B42318' }]}>Due</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {isUpdating && (
+              <ActivityIndicator style={{ marginTop: 12 }} color={colors.primary} />
+            )}
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   // ─── Property Picker Modal ─────────────────────────────────
   const renderPropertyPicker = () => (
@@ -463,7 +528,7 @@ export const PaymentsScreen: React.FC = () => {
       >  
       <View style={styles.header}>
         <View>
-          <Text style={[typography.textStyles.h2, styles.headerTitle]}>Payments</Text>
+          <Text style={[typography.textStyles.h4, styles.headerTitle]}>Payments</Text>
           <Text style={[typography.textStyles.bodySmall, styles.headerSubtitle]}>Track tenant payment status</Text>
         </View>
       </View>
@@ -573,6 +638,11 @@ export const PaymentsScreen: React.FC = () => {
 
       {renderStatusModal()}
       {renderPropertyPicker()}
+      <SupportModal
+        visible={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        defaultIssueType="payment"
+      />
     </View>
   );
 };
@@ -584,11 +654,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F8FA',
   },
   header: {
-    marginBottom: spacing[5],
+    paddingBottom: 12,
   },
   headerTitle: {
-    color: colors.text.primary,
-    marginBottom: 4,
+    color: colors.primary,
+    marginBottom: 8,
   },
   headerSubtitle: {
     color: colors.text.secondary,
@@ -597,8 +667,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: spacing[4],
-    paddingBottom: spacing[10],
+    padding: 20,
+    paddingBottom: 40,
   },
 
   // Property Selector
@@ -959,6 +1029,36 @@ const styles = StyleSheet.create({
   statusOptionText: {
     fontSize: 15,
     fontFamily: 'Figtree_600SemiBold',
+  },
+  confirmText: {
+    fontSize: 14,
+    fontFamily: 'Figtree_500Medium',
+    color: colors.gray[700],
+    textAlign: 'center',
+    marginBottom: spacing[2],
+  },
+  paidMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    borderRadius: borderRadius.lg,
+    backgroundColor: '#E7F7EF',
+    borderWidth: 1,
+    borderColor: '#BFEAD7',
+  },
+  paidMessageText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Figtree_500Medium',
+    color: '#0F8A5F',
+  },
+  paidSupportText: {
+    fontFamily: 'Figtree_400Regular',
+    color: colors.gray[500],
+    textAlign: 'center',
+    marginTop: spacing[3],
   },
 
   // Picker Modal
